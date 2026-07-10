@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gastos con Amigos V4 - Grupo Compartido Real</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
+header{background:#0f766e;color:white;padding:14px;text-align:center}
+h1{margin:0;font-size:23px}
+.wrap{max-width:900px;margin:auto;padding:12px}
+.card{background:white;border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 3px 12px #0001}
+button{border:0;border-radius:9px;padding:10px 12px;background:#0f766e;color:white;font-weight:bold;cursor:pointer;margin:3px}
+button.secondary{background:#2563eb}
+button.gray{background:#64748b}
+input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;margin:5px 0;font-size:16px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.row>*{flex:1}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;font-weight:bold}
+.hidden{display:none!important}
+.person{display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border-radius:999px;padding:7px 10px;margin:4px}
+.expense{border-left:5px solid #0f766e;background:#f8fafc;border-radius:10px;padding:9px;margin:8px 0}
+.resultLine{background:#f0fdf4;border-left:5px solid #16a34a;padding:10px;border-radius:10px;margin:7px 0;font-weight:bold}
+.linkbox{background:#f8fafc;border:1px dashed #94a3b8;border-radius:10px;padding:10px;word-break:break-all}
+.notice{background:#fff7ed;border-left:5px solid #f97316;border-radius:10px;padding:10px;margin:8px 0}
+.ok{background:#f0fdf4;border-left-color:#16a34a}
+.small{font-size:13px;color:#64748b}
+.topline{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.status{font-size:13px;padding:7px 9px;border-radius:9px;background:#eef6ff;color:#1f4f8b}
+@media(max-width:650px){.row{display:block}button{width:100%;margin:4px 0}.topline{display:block}}
+</style>
+</head>
+<body>
+<header>
+<h1>💸 Gastos con Amigos V4</h1>
+<div class="small" style="color:white">Grupo compartido real</div>
+</header>
+
+<div class="wrap">
+
+<section class="card">
+<h2>Conexión</h2>
+<div class="notice">Pegá acá la URL de Apps Script que termina en <b>/exec</b>.</div>
+<label>URL de Apps Script</label>
+<input id="serverUrl" placeholder="https://script.google.com/macros/s/XXXXX/exec">
+<button onclick="saveServerUrl()">Guardar conexión</button>
+<button class="gray" onclick="testConnection()">Probar conexión</button>
+<div id="serverStatus" class="small"></div>
+</section>
+
+<section id="home" class="card">
+<div class="topline">
+<h2>Crear grupo compartido</h2>
+<span class="status" id="connectionBadge">Sin conexión</span>
+</div>
+<label>Nombre del grupo</label>
+<input id="groupName" placeholder="Ej: Asado sábado / Viaje Bariloche / Regalo de cumple">
+<div class="row">
+<div>
+<label>Participantes iniciales</label>
+<input id="participantsText" placeholder="Ej: Marcelo, Andrea, Juan">
+</div>
+<div><button onclick="createSharedGroup()">Crear grupo</button></div>
+</div>
+
+<hr>
+<h3>Entrar a un grupo existente</h3>
+<label>Código del grupo</label>
+<input id="joinCode" placeholder="Ej: ABCD-1234">
+<button class="secondary" onclick="joinGroup()">Entrar</button>
+</section>
+
+<section id="groupView" class="hidden">
+<div class="card">
+<button class="gray" onclick="backHome()">← Volver</button>
+<div class="topline">
+<h2 id="title"></h2>
+<span class="status" id="syncStatus">Sin verificar</span>
+</div>
+<div><span class="badge">Grupo compartido</span> <span id="groupCode" class="badge"></span></div>
+
+<h3>Participantes</h3>
+<div id="participantsList"></div>
+
+<div class="row">
+<div>
+<label>Agregar participante</label>
+<input id="newParticipant" placeholder="Nombre">
+</div>
+<div><button onclick="addParticipant()">Agregar</button></div>
+</div>
+
+<h3>Enlace para compartir</h3>
+<div class="linkbox" id="shareLink"></div>
+<button class="secondary" onclick="copyInvite()">Copiar mensaje</button>
+<button class="secondary" onclick="openWhatsapp()">Enviar por WhatsApp</button>
+<button class="gray" onclick="loadGroup(true)">Actualizar lista</button>
+
+<div class="notice ok">Todos los que entren con este código o enlace ven el mismo grupo guardado en la copia compartida.</div>
+</div>
+
+<div class="card">
+<h3>Cargar gasto</h3><div class="notice ok">La selección no cambia mientras cargás. La lista se actualiza recién después de guardar.</div>
+<div class="row">
+<div><label>Quién pagó</label><select id="payer"></select></div>
+<div><label>Importe</label><input id="amount" type="number" placeholder="Ej: 30000"></div>
+</div>
+<label>Concepto</label>
+<input id="concept" placeholder="Ej: carne, bebidas, hotel">
+<button onclick="addExpense()">Guardar gasto</button>
+<div id="expenseStatus" class="small"></div>
+</div>
+
+<div class="card">
+<h3>Gastos cargados</h3>
+<div id="expensesList"></div>
+</div>
+
+<div class="card">
+<h3>📊 Resultado</h3>
+<div id="summaryBox"></div>
+<div id="resultsBox"></div>
+</div>
+</section>
+</div>
+
+<script>
+let group=null;
+let autoTimer=null;
+
+function getServerUrl(){ return localStorage.getItem('gca_server_url') || ''; }
+function cleanUrl(url){
+  url=String(url||'').trim();
+  const i=url.indexOf('https://script.google.com/macros/s/');
+  if(i>0) url=url.slice(i);
+  return url;
+}
+function saveServerUrl(){
+  const url=cleanUrl(serverUrl.value);
+  if(!url){alert('Pegá la URL de Apps Script.');return}
+  if(!url.includes('/macros/s/') || !url.endsWith('/exec')){
+    alert('La URL parece incompleta. Tiene que terminar en /exec.');
+    return;
+  }
+  localStorage.setItem('gca_server_url',url);
+  updateConnectionBadge();
+}
+function updateConnectionBadge(){
+  const ok=!!getServerUrl();
+  connectionBadge.textContent=ok?'Conectado':'Sin conexión';
+  serverStatus.innerHTML=ok?'Conexión guardada.':'';
+  serverUrl.value=getServerUrl();
+}
+async function testConnection(){
+  try{
+    const r=await fetch(getServerUrl()+'?t='+Date.now());
+    const data=await r.json();
+    serverStatus.innerHTML=data.ok?'<span style="color:#15803d">Servidor responde bien: '+escapeHtml(data.app||'OK')+'</span>':'Servidor respondió pero no OK';
+  }catch(e){ serverStatus.innerHTML='<span style="color:#dc2626">No se pudo conectar: '+escapeHtml(e.message)+'</span>'; }
+}
+function uid(){ return Math.random().toString(36).slice(2,6).toUpperCase()+"-"+Math.floor(1000+Math.random()*9000); }
+function expenseId(){ return "G-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7); }
+function money(n){ return '$ '+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+async function api(action,payload){
+  const url=getServerUrl();
+  if(!url) throw new Error('Falta configurar la URL de Apps Script.');
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...(payload||{})})});
+  const txt=await r.text();
+  let data; try{data=JSON.parse(txt)}catch(e){throw new Error('El servidor no devolvió JSON: '+txt.slice(0,100))}
+  if(!data.ok) throw new Error(data.error || 'Error de servidor.');
+  return data;
+}
+
+async function createSharedGroup(){
+  try{
+    const name=groupName.value.trim();
+    const participants=participantsText.value.split(',').map(x=>x.trim()).filter(Boolean);
+    if(!name){alert('Escribí el nombre del grupo.');return}
+    if(participants.length<2){alert('Cargá al menos 2 participantes separados por coma.');return}
+    const newGroup={id:uid(),name,participants,expenses:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    const data=await api('saveGroup',{group:newGroup});
+    openGroup(data.group || newGroup);
+  }catch(e){alert(e.message)}
+}
+async function joinGroup(){
+  const id=joinCode.value.trim().toUpperCase();
+  if(!id){alert('Escribí el código del grupo.');return}
+  try{
+    const data=await api('getGroup',{id});
+    openGroup(data.group);
+  }catch(e){alert(e.message)}
+}
+function openGroup(g){
+  if(!g || !g.id){alert('El servidor no devolvió un grupo válido.');return}
+  group=g;
+  localStorage.setItem('gca_last_group',group.id);
+  home.classList.add('hidden');
+  groupView.classList.remove('hidden');
+  render();
+  
+}
+function backHome(){ stopAutoRefresh(); groupView.classList.add('hidden'); home.classList.remove('hidden'); }
+function getShareUrl(){ return location.href.split('#')[0]+'#grupo='+encodeURIComponent(group.id); }
+
+function render(){
+  if(!group)return;
+  const payerAnterior = payer ? payer.value : '';
+  title.textContent=group.name;
+  groupCode.textContent='Código: '+group.id;
+  participantsList.innerHTML=group.participants.map(p=>'<span class="person">'+escapeHtml(p)+'</span>').join('');
+  payer.innerHTML='<option value="">-- Elegir quién pagó --</option>'+group.participants.map(p=>'<option>'+escapeHtml(p)+'</option>').join('');
+  if(payerAnterior && group.participants.includes(payerAnterior)) payer.value=payerAnterior;
+  shareLink.textContent=getShareUrl();
+  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><b>'+escapeHtml(e.payer)+'</b> pagó <b>'+money(e.amount)+'</b><br>'+escapeHtml(e.concept||'Sin concepto')+'</div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
+  renderResults();
+}
+
+async function saveGroup(){
+  group.updatedAt=new Date().toISOString();
+  const data=await api('saveGroup',{group});
+  group=data.group || group;
+}
+async function loadGroup(force=false){
+  if(!group)return;
+  const escribiendo=(amount && amount.value)||(concept && concept.value)||(payer && payer.value);
+  if(escribiendo && !force){ syncStatus.textContent='Pausa mientras cargás'; return; }
+  try{
+    const data=await api('getGroup',{id:group.id});
+    group=data.group;
+    render();
+    syncStatus.textContent='Actualizado: '+new Date().toLocaleTimeString('es-AR');
+  }catch(e){ syncStatus.textContent='No se pudo verificar'; }
+}
+async function addParticipant(){
+  try{
+    const p=newParticipant.value.trim();
+    if(!p){alert('Escribí un nombre.');return}
+    if(group.participants.some(x=>x.toLowerCase()===p.toLowerCase())){alert('Ese participante ya está.');return}
+    group.participants.push(p); newParticipant.value='';
+    await saveGroup(); render();
+  }catch(e){alert(e.message)}
+}
+async function addExpense(){
+  try{
+    const payerName=payer.value;
+    const amt=Number(amount.value);
+    const conc=concept.value.trim();
+
+    if(!payerName){alert('Elegí quién pagó.');return}
+    if(!amt || amt<=0){alert('Cargá un importe válido.');return}
+
+    group.expenses.push({
+      id:expenseId(),
+      payer:payerName,
+      amount:amt,
+      concept:conc,
+      createdAt:new Date().toISOString()
+    });
+
+    expenseStatus.innerHTML='<span style="color:#475569">Guardando...</span>';
+
+    await saveGroup();
+
+    render();
+    payer.value='';
+    amount.value='';
+    concept.value='';
+
+    expenseStatus.innerHTML='<span style="color:#15803d">✅ Gasto guardado correctamente.</span>';
+  }catch(e){
+    expenseStatus.innerHTML='';
+    alert(e.message);
+  }
+}
+function renderResults(){
+  if(!group || !group.expenses.length){
+    summaryBox.innerHTML='<div class="small">Todavía no hay gastos para calcular.</div>'; resultsBox.innerHTML=''; return;
+  }
+  const total=group.expenses.reduce((a,e)=>a+Number(e.amount||0),0);
+  const per=total/group.participants.length;
+  summaryBox.innerHTML='<div class="resultLine">Total gastado: '+money(total)+' · Participantes: '+group.participants.length+' · Promedio: '+money(per)+'</div>';
+  const balance={}; group.participants.forEach(p=>balance[p]=0);
+  group.expenses.forEach(e=>{ balance[e.payer]+=Number(e.amount); const share=Number(e.amount)/group.participants.length; group.participants.forEach(p=>balance[p]-=share); });
+  const debtors=[], creditors=[];
+  Object.entries(balance).forEach(([p,v])=>{ if(v<-0.01)debtors.push({p,amount:-v}); if(v>0.01)creditors.push({p,amount:v}); });
+  debtors.sort((a,b)=>b.amount-a.amount); creditors.sort((a,b)=>b.amount-a.amount);
+  const lines=[]; let i=0,j=0;
+  while(i<debtors.length && j<creditors.length){
+    const pay=Math.min(debtors[i].amount,creditors[j].amount);
+    if(pay>0.01)lines.push(debtors[i].p+' debe '+money(pay)+' a '+creditors[j].p);
+    debtors[i].amount-=pay; creditors[j].amount-=pay;
+    if(debtors[i].amount<=0.01)i++; if(creditors[j].amount<=0.01)j++;
+  }
+  resultsBox.innerHTML=lines.length?lines.map(l=>'<div class="resultLine">'+escapeHtml(l)+'</div>').join(''):'<div class="resultLine">Todos están saldados.</div>';
+}
+function inviteText(){ return 'Te invito al grupo "'+group.name+'".\\nCódigo: '+group.id+'\\n'+getShareUrl(); }
+function copyInvite(){ navigator.clipboard.writeText(inviteText()).then(()=>alert('Mensaje copiado.')); }
+function openWhatsapp(){ window.open('https://wa.me/?text='+encodeURIComponent(inviteText()),'_blank'); }
+function startAutoRefresh(){}
+function stopAutoRefresh(){}
+
+window.addEventListener('load',()=>{ updateConnectionBadge(); });
+</script>
+</body>
+</html>
