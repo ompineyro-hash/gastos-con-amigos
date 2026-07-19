@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V4 - Grupo Compartido Real</title>
+<title>Gastos con Amigos V4.1 - Invitación Directa</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -33,8 +33,8 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 </head>
 <body>
 <header>
-<h1>💸 Gastos con Amigos V4</h1>
-<div class="small" style="color:white">Grupo compartido real</div>
+<h1>💸 Gastos con Amigos V4.1</h1>
+<div class="small" style="color:white">Invitación directa al grupo</div>
 </header>
 
 <div class="wrap">
@@ -203,7 +203,11 @@ function openGroup(g){
   
 }
 function backHome(){ stopAutoRefresh(); groupView.classList.add('hidden'); home.classList.remove('hidden'); }
-function getShareUrl(){ return location.href.split('#')[0]+'#grupo='+encodeURIComponent(group.id); }
+function getShareUrl(){
+  const base=location.href.split('#')[0];
+  const server=getServerUrl();
+  return base+'#grupo='+encodeURIComponent(group.id)+'&servidor='+encodeURIComponent(server);
+}
 
 function render(){
   if(!group)return;
@@ -296,13 +300,52 @@ function renderResults(){
   }
   resultsBox.innerHTML=lines.length?lines.map(l=>'<div class="resultLine">'+escapeHtml(l)+'</div>').join(''):'<div class="resultLine">Todos están saldados.</div>';
 }
-function inviteText(){ return 'Te invito al grupo "'+group.name+'".\\nCódigo: '+group.id+'\\n'+getShareUrl(); }
+function inviteText(){
+  return 'Te invito al grupo "'+group.name+'".\nAbrí este enlace para entrar directamente:\n'+getShareUrl();
+}
 function copyInvite(){ navigator.clipboard.writeText(inviteText()).then(()=>alert('Mensaje copiado.')); }
 function openWhatsapp(){ window.open('https://wa.me/?text='+encodeURIComponent(inviteText()),'_blank'); }
 function startAutoRefresh(){}
 function stopAutoRefresh(){}
+async function openInviteFromLink(){
+  const hash=location.hash.replace(/^#/,'');
+  if(!hash)return;
 
-window.addEventListener('load',()=>{ updateConnectionBadge(); });
+  const params=new URLSearchParams(hash);
+  const invitedGroup=params.get('grupo');
+  const invitedServer=params.get('servidor');
+
+  if(invitedServer){
+    const clean=cleanUrl(invitedServer);
+    if(clean && clean.includes('/macros/s/') && clean.endsWith('/exec')){
+      localStorage.setItem('gca_server_url',clean);
+      updateConnectionBadge();
+    }
+  }
+
+  if(!invitedGroup)return;
+  joinCode.value=invitedGroup.toUpperCase();
+
+  if(!getServerUrl()){
+    alert('No se pudo completar la invitación porque falta la conexión del grupo.');
+    return;
+  }
+
+  try{
+    connectionBadge.textContent='Conectando...';
+    const data=await api('getGroup',{id:invitedGroup.toUpperCase()});
+    openGroup(data.group);
+    syncStatus.textContent='Grupo conectado';
+  }catch(e){
+    connectionBadge.textContent='Sin conexión';
+    alert('No se pudo abrir el grupo invitado: '+e.message);
+  }
+}
+
+window.addEventListener('load',async()=>{
+  updateConnectionBadge();
+  await openInviteFromLink();
+});
 </script>
 </body>
 </html>
