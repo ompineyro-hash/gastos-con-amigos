@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V4.1 - Invitación Directa</title>
+<title>Gastos con Amigos V4.6 - Editar y Eliminar</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -33,8 +33,8 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 </head>
 <body>
 <header>
-<h1>💸 Gastos con Amigos V4.1</h1>
-<div class="small" style="color:white">Invitación directa al grupo</div>
+<h1>💸 Gastos con Amigos V4.6</h1>
+<div class="small" style="color:white">Invitación directa · Invitación directa con enlace limpio</div>
 </header>
 
 <div class="wrap">
@@ -91,24 +91,28 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <div><button onclick="addParticipant()">Agregar</button></div>
 </div>
 
-<h3>Enlace para compartir</h3>
-<div class="linkbox" id="shareLink"></div>
-<button class="secondary" onclick="copyInvite()">Copiar mensaje</button>
-<button class="secondary" onclick="openWhatsapp()">Enviar por WhatsApp</button>
+<h3>Compartir grupo</h3>
+<div class="notice ok"><b>Invitación directa:</b><br>La otra persona toca el enlace y entra al grupo sin escribir códigos.</div>
+<button class="secondary" onclick="shareInvite()">📤 Compartir invitación</button>
+<button class="secondary" onclick="copyInvite()">📋 Copiar invitación</button>
+<button class="gray" onclick="toggleAdvanced()">⚙ Ver enlace técnico</button>
 <button class="gray" onclick="loadGroup(true)">Actualizar lista</button>
 
-<div class="notice ok">Todos los que entren con este código o enlace ven el mismo grupo guardado en la copia compartida.</div>
+<div id="advancedShare" class="hidden" style="margin-top:10px">
+<div class="linkbox" id="shareLink"></div>
+</div>
 </div>
 
 <div class="card">
-<h3>Cargar gasto</h3><div class="notice ok">La selección no cambia mientras cargás. La lista se actualiza recién después de guardar.</div>
+<h3 id="expenseFormTitle">Cargar gasto</h3><div class="notice ok">La selección no cambia mientras cargás. La lista se actualiza recién después de guardar.</div>
 <div class="row">
 <div><label>Quién pagó</label><select id="payer"></select></div>
 <div><label>Importe</label><input id="amount" type="number" placeholder="Ej: 30000"></div>
 </div>
 <label>Concepto</label>
 <input id="concept" placeholder="Ej: carne, bebidas, hotel">
-<button onclick="addExpense()">Guardar gasto</button>
+<button id="saveExpenseBtn" onclick="addExpense()">Guardar gasto</button>
+<button id="cancelEditBtn" class="gray hidden" onclick="cancelEditExpense()">Cancelar edición</button>
 <div id="expenseStatus" class="small"></div>
 </div>
 
@@ -128,6 +132,7 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <script>
 let group=null;
 let autoTimer=null;
+let editingExpenseId=null;
 
 function getServerUrl(){ return localStorage.getItem('gca_server_url') || ''; }
 function cleanUrl(url){
@@ -204,9 +209,9 @@ function openGroup(g){
 }
 function backHome(){ stopAutoRefresh(); groupView.classList.add('hidden'); home.classList.remove('hidden'); }
 function getShareUrl(){
-  const base=location.href.split('#')[0];
+  const publicBase='https://ompineyro-hash.github.io/gastos-con-amigos/';
   const server=getServerUrl();
-  return base+'#grupo='+encodeURIComponent(group.id)+'&servidor='+encodeURIComponent(server);
+  return publicBase+'#grupo='+encodeURIComponent(group.id)+'&servidor='+encodeURIComponent(server);
 }
 
 function render(){
@@ -214,11 +219,12 @@ function render(){
   const payerAnterior = payer ? payer.value : '';
   title.textContent=group.name;
   groupCode.textContent='Código: '+group.id;
+  if(window.simpleGroupCode) simpleGroupCode.textContent=group.id;
   participantsList.innerHTML=group.participants.map(p=>'<span class="person">'+escapeHtml(p)+'</span>').join('');
   payer.innerHTML='<option value="">-- Elegir quién pagó --</option>'+group.participants.map(p=>'<option>'+escapeHtml(p)+'</option>').join('');
   if(payerAnterior && group.participants.includes(payerAnterior)) payer.value=payerAnterior;
   shareLink.textContent=getShareUrl();
-  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><b>'+escapeHtml(e.payer)+'</b> pagó <b>'+money(e.amount)+'</b><br>'+escapeHtml(e.concept||'Sin concepto')+'</div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
+  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><b>'+escapeHtml(e.payer)+'</b> pagó <b>'+money(e.amount)+'</b><br>'+escapeHtml(e.concept||'Sin concepto')+'<div style="margin-top:7px"><button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button></div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
   renderResults();
 }
 
@@ -256,26 +262,78 @@ async function addExpense(){
     if(!payerName){alert('Elegí quién pagó.');return}
     if(!amt || amt<=0){alert('Cargá un importe válido.');return}
 
-    group.expenses.push({
-      id:expenseId(),
-      payer:payerName,
-      amount:amt,
-      concept:conc,
-      createdAt:new Date().toISOString()
-    });
-
     expenseStatus.innerHTML='<span style="color:#475569">Guardando...</span>';
 
+    if(editingExpenseId){
+      const expense=group.expenses.find(e=>e.id===editingExpenseId);
+      if(!expense) throw new Error('No se encontró el gasto para editar.');
+      expense.payer=payerName;
+      expense.amount=amt;
+      expense.concept=conc;
+      expense.updatedAt=new Date().toISOString();
+    }else{
+      group.expenses.push({
+        id:expenseId(),
+        payer:payerName,
+        amount:amt,
+        concept:conc,
+        createdAt:new Date().toISOString()
+      });
+    }
+
     await saveGroup();
-
     render();
-    payer.value='';
-    amount.value='';
-    concept.value='';
 
-    expenseStatus.innerHTML='<span style="color:#15803d">✅ Gasto guardado correctamente.</span>';
+    const edited=!!editingExpenseId;
+    resetExpenseForm();
+    expenseStatus.innerHTML='<span style="color:#15803d">✅ '+(edited?'Gasto actualizado correctamente.':'Gasto guardado correctamente.')+'</span>';
   }catch(e){
     expenseStatus.innerHTML='';
+    alert(e.message);
+  }
+}
+
+function editExpense(id){
+  const expense=group.expenses.find(e=>e.id===id);
+  if(!expense){alert('No se encontró el gasto.');return}
+  editingExpenseId=id;
+  payer.value=expense.payer;
+  amount.value=expense.amount;
+  concept.value=expense.concept||'';
+  expenseFormTitle.textContent='Editar gasto';
+  saveExpenseBtn.textContent='Guardar cambios';
+  cancelEditBtn.classList.remove('hidden');
+  expenseStatus.innerHTML='<span style="color:#475569">Editando gasto seleccionado.</span>';
+  expenseFormTitle.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cancelEditExpense(){
+  resetExpenseForm();
+  expenseStatus.innerHTML='';
+}
+
+function resetExpenseForm(){
+  editingExpenseId=null;
+  payer.value='';
+  amount.value='';
+  concept.value='';
+  expenseFormTitle.textContent='Cargar gasto';
+  saveExpenseBtn.textContent='Guardar gasto';
+  cancelEditBtn.classList.add('hidden');
+}
+
+async function deleteExpense(id){
+  const expense=group.expenses.find(e=>e.id===id);
+  if(!expense){alert('No se encontró el gasto.');return}
+  if(!confirm('¿Eliminar este gasto?\n\n'+expense.payer+' - '+money(expense.amount)+' - '+(expense.concept||'Sin concepto'))) return;
+
+  try{
+    group.expenses=group.expenses.filter(e=>e.id!==id);
+    await saveGroup();
+    if(editingExpenseId===id) resetExpenseForm();
+    render();
+    expenseStatus.innerHTML='<span style="color:#15803d">✅ Gasto eliminado correctamente.</span>';
+  }catch(e){
     alert(e.message);
   }
 }
@@ -300,10 +358,36 @@ function renderResults(){
   }
   resultsBox.innerHTML=lines.length?lines.map(l=>'<div class="resultLine">'+escapeHtml(l)+'</div>').join(''):'<div class="resultLine">Todos están saldados.</div>';
 }
-function inviteText(){
-  return 'Te invito al grupo "'+group.name+'".\nAbrí este enlace para entrar directamente:\n'+getShareUrl();
+function toggleAdvanced(){advancedShare.classList.toggle('hidden');}
+
+async function shareInvite(){
+  const text=inviteText();
+  try{
+    if(navigator.share){
+      await navigator.share({title:'Gastos con Amigos',text});
+    }else{
+      await navigator.clipboard.writeText(text);
+      alert('La invitación quedó copiada. Podés pegarla donde quieras.');
+    }
+  }catch(e){
+    if(e && e.name==='AbortError') return;
+    try{
+      await navigator.clipboard.writeText(text);
+      alert('La invitación quedó copiada. Podés pegarla donde quieras.');
+    }catch(_){
+      alert('No se pudo compartir la invitación.');
+    }
+  }
 }
-function copyInvite(){ navigator.clipboard.writeText(inviteText()).then(()=>alert('Mensaje copiado.')); }
+
+function copyCode(){
+  navigator.clipboard.writeText(group.id).then(()=>alert('Código copiado: '+group.id));
+}
+
+function inviteText(){
+  return '📌 Te invito al grupo "'+group.name+'".\n\nTocá este enlace para entrar directamente:\n'+getShareUrl();
+}
+function copyInvite(){ navigator.clipboard.writeText(inviteText()).then(()=>alert('Invitación copiada.')); }
 function openWhatsapp(){ window.open('https://wa.me/?text='+encodeURIComponent(inviteText()),'_blank'); }
 function startAutoRefresh(){}
 function stopAutoRefresh(){}
