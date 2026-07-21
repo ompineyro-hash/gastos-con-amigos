@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V4.6 - Editar y Eliminar</title>
+<title>Gastos con Amigos V5.1 - Gestión de grupos</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -28,13 +28,20 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 .small{font-size:13px;color:#64748b}
 .topline{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .status{font-size:13px;padding:7px 9px;border-radius:9px;background:#eef6ff;color:#1f4f8b}
-@media(max-width:650px){.row{display:block}button{width:100%;margin:4px 0}.topline{display:block}}
+.groupItem{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:11px;margin:8px 0}
+.groupInfo{min-width:0}.groupInfo b{display:block;font-size:17px}.groupInfo .small{margin-top:3px}
+.emptyGroups{padding:14px;text-align:center;background:#f8fafc;border-radius:12px;color:#64748b}
+.groupActions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.groupActions button{margin:0;padding:8px 10px}
+.danger{background:#b91c1c}
+.sectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+@media(max-width:650px){.row{display:block}button{width:100%;margin:4px 0}.topline{display:block}.groupItem{display:block}.groupItem button{margin-top:9px}.groupActions{display:block}.groupActions button{width:100%}}
 </style>
 </head>
 <body>
 <header>
-<h1>💸 Gastos con Amigos V4.6</h1>
-<div class="small" style="color:white">Invitación directa · Invitación directa con enlace limpio</div>
+<h1>💸 Gastos con Amigos V5.1</h1>
+<div class="small" style="color:white">Mis grupos · Renombrar · Orden por actividad</div>
 </header>
 
 <div class="wrap">
@@ -49,26 +56,41 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <div id="serverStatus" class="small"></div>
 </section>
 
-<section id="home" class="card">
-<div class="topline">
-<h2>Crear grupo compartido</h2>
-<span class="status" id="connectionBadge">Sin conexión</span>
-</div>
-<label>Nombre del grupo</label>
-<input id="groupName" placeholder="Ej: Asado sábado / Viaje Bariloche / Regalo de cumple">
-<div class="row">
-<div>
-<label>Participantes iniciales</label>
-<input id="participantsText" placeholder="Ej: Marcelo, Andrea, Juan">
-</div>
-<div><button onclick="createSharedGroup()">Crear grupo</button></div>
-</div>
+<section id="home">
+  <div class="card">
+    <div class="sectionTitle">
+      <h2>Mis grupos</h2>
+      <button onclick="showCreateGroup()">➕ Crear grupo nuevo</button>
+    </div>
+    <div id="myGroupsList"></div>
+  </div>
 
-<hr>
-<h3>Entrar a un grupo existente</h3>
-<label>Código del grupo</label>
-<input id="joinCode" placeholder="Ej: ABCD-1234">
-<button class="secondary" onclick="joinGroup()">Entrar</button>
+  <div id="createGroupCard" class="card hidden">
+    <div class="sectionTitle">
+      <h2>Crear grupo nuevo</h2>
+      <button class="gray" onclick="cancelCreateGroup()">Cancelar</button>
+    </div>
+    <label>Nombre del grupo</label>
+    <input id="groupName" placeholder="Ej: Asado sábado / Viaje Bariloche / Regalo de cumple">
+    <div class="row">
+      <div>
+        <label>Participantes iniciales</label>
+        <input id="participantsText" placeholder="Ej: Marcelo, Andrea, Juan">
+      </div>
+      <div><button onclick="createSharedGroup()">Crear grupo</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="topline">
+      <h3>Entrar a un grupo existente</h3>
+      <span class="status" id="connectionBadge">Sin conexión</span>
+    </div>
+    <div class="small">Usá esta opción solo para recuperar un grupo mediante su código.</div>
+    <label>Código del grupo</label>
+    <input id="joinCode" placeholder="Ej: ABCD-1234">
+    <button class="secondary" onclick="joinGroup()">Entrar</button>
+  </div>
 </section>
 
 <section id="groupView" class="hidden">
@@ -79,6 +101,7 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <span class="status" id="syncStatus">Sin verificar</span>
 </div>
 <div><span class="badge">Grupo compartido</span> <span id="groupCode" class="badge"></span></div>
+<div id="groupMiniSummary" class="small" style="margin-top:8px"></div>
 
 <h3>Participantes</h3>
 <div id="participantsList"></div>
@@ -179,6 +202,78 @@ async function api(action,payload){
   return data;
 }
 
+function getMyGroups(){
+  try{
+    const data=JSON.parse(localStorage.getItem('gca_my_groups')||'[]');
+    return Array.isArray(data)?data:[];
+  }catch(e){ return []; }
+}
+function saveMyGroups(items){ localStorage.setItem('gca_my_groups',JSON.stringify(items)); }
+function rememberGroup(g){
+  if(!g || !g.id)return;
+  const items=getMyGroups().filter(x=>x.id!==g.id);
+  items.unshift({id:g.id,name:g.name||'Grupo sin nombre',participants:Array.isArray(g.participants)?g.participants:[],updatedAt:g.updatedAt||new Date().toISOString()});
+  saveMyGroups(items.slice(0,50));
+  renderMyGroups();
+}
+function formatLastActivity(value){
+  if(!value)return 'Sin actividad registrada';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return 'Sin actividad registrada';
+  const now=new Date();
+  const sameDay=d.toDateString()===now.toDateString();
+  const yesterday=new Date(now); yesterday.setDate(now.getDate()-1);
+  if(sameDay)return 'Hoy '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  if(d.toDateString()===yesterday.toDateString())return 'Ayer '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('es-AR')+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+}
+function renderMyGroups(){
+  if(!window.myGroupsList)return;
+  const items=getMyGroups().sort((a,b)=>new Date(b.updatedAt||0)-new Date(a.updatedAt||0));
+  if(!items.length){ myGroupsList.innerHTML='<div class="emptyGroups">Todavía no hay grupos guardados en este dispositivo.</div>'; return; }
+  myGroupsList.innerHTML=items.map(item=>{
+    const people=(item.participants||[]).join(', ')||'Sin participantes';
+    return '<div class="groupItem"><div class="groupInfo"><b>'+escapeHtml(item.name)+'</b>'+ 
+      '<div class="small">👥 '+escapeHtml(people)+'</div>'+ 
+      '<div class="small">🕒 Última actividad: '+escapeHtml(formatLastActivity(item.updatedAt))+'</div></div>'+ 
+      '<div class="groupActions"><button class="secondary" onclick="openSavedGroup(\''+item.id+'\')">Abrir</button>'+ 
+      '<button onclick="renameSavedGroup(\''+item.id+'\')">✏️ Renombrar</button>'+ 
+      '<button class="danger" onclick="removeSavedGroup(\''+item.id+'\')">🗑 Quitar</button></div></div>';
+  }).join('');
+}
+async function renameSavedGroup(id){
+  const item=getMyGroups().find(x=>x.id===id);
+  if(!item)return;
+  const next=prompt('Nuevo nombre del grupo:',item.name||'');
+  if(next===null)return;
+  const clean=next.trim();
+  if(!clean){alert('El nombre no puede quedar vacío.');return;}
+  try{
+    const data=await api('getGroup',{id});
+    const g=data.group;
+    g.name=clean;
+    g.updatedAt=new Date().toISOString();
+    const saved=await api('saveGroup',{group:g});
+    rememberGroup(saved.group||g);
+    alert('Nombre actualizado.');
+  }catch(e){alert('No se pudo renombrar el grupo: '+e.message);}
+}
+function removeSavedGroup(id){
+  const item=getMyGroups().find(x=>x.id===id);
+  if(!item)return;
+  if(!confirm('¿Quitar "'+item.name+'" de Mis grupos?\n\nNo se borran los gastos compartidos. Podrás recuperarlo con su enlace o código.'))return;
+  saveMyGroups(getMyGroups().filter(x=>x.id!==id));
+  renderMyGroups();
+}
+async function openSavedGroup(id){
+  try{ const data=await api('getGroup',{id}); openGroup(data.group); }
+  catch(e){ alert('No se pudo abrir el grupo: '+e.message); }
+}
+function showCreateGroup(){
+  groupName.value=''; participantsText.value=''; createGroupCard.classList.remove('hidden'); groupName.focus(); createGroupCard.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function cancelCreateGroup(){ groupName.value=''; participantsText.value=''; createGroupCard.classList.add('hidden'); }
+
 async function createSharedGroup(){
   try{
     const name=groupName.value.trim();
@@ -202,12 +297,20 @@ function openGroup(g){
   if(!g || !g.id){alert('El servidor no devolvió un grupo válido.');return}
   group=g;
   localStorage.setItem('gca_last_group',group.id);
+  rememberGroup(group);
   home.classList.add('hidden');
   groupView.classList.remove('hidden');
   render();
   
 }
-function backHome(){ stopAutoRefresh(); groupView.classList.add('hidden'); home.classList.remove('hidden'); }
+function backHome(){
+  stopAutoRefresh();
+  group=null; editingExpenseId=null;
+  groupName.value=''; participantsText.value=''; joinCode.value='';
+  createGroupCard.classList.add('hidden');
+  groupView.classList.add('hidden'); home.classList.remove('hidden');
+  renderMyGroups(); window.scrollTo({top:0,behavior:'smooth'});
+}
 function getShareUrl(){
   const publicBase='https://ompineyro-hash.github.io/gastos-con-amigos/';
   const server=getServerUrl();
@@ -219,6 +322,7 @@ function render(){
   const payerAnterior = payer ? payer.value : '';
   title.textContent=group.name;
   groupCode.textContent='Código: '+group.id;
+  groupMiniSummary.textContent='👥 '+group.participants.length+' participantes · 💰 '+group.expenses.length+' gastos · 🕒 '+formatLastActivity(group.updatedAt);
   if(window.simpleGroupCode) simpleGroupCode.textContent=group.id;
   participantsList.innerHTML=group.participants.map(p=>'<span class="person">'+escapeHtml(p)+'</span>').join('');
   payer.innerHTML='<option value="">-- Elegir quién pagó --</option>'+group.participants.map(p=>'<option>'+escapeHtml(p)+'</option>').join('');
@@ -232,6 +336,7 @@ async function saveGroup(){
   group.updatedAt=new Date().toISOString();
   const data=await api('saveGroup',{group});
   group=data.group || group;
+  rememberGroup(group);
 }
 async function loadGroup(force=false){
   if(!group)return;
@@ -240,6 +345,7 @@ async function loadGroup(force=false){
   try{
     const data=await api('getGroup',{id:group.id});
     group=data.group;
+    rememberGroup(group);
     render();
     syncStatus.textContent='Actualizado: '+new Date().toLocaleTimeString('es-AR');
   }catch(e){ syncStatus.textContent='No se pudo verificar'; }
@@ -428,6 +534,7 @@ async function openInviteFromLink(){
 
 window.addEventListener('load',async()=>{
   updateConnectionBadge();
+  renderMyGroups();
   await openInviteFromLink();
 });
 </script>
