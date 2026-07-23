@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V5.2 - Acceso limpio</title>
+<title>Gastos con Amigos V5.3 - Final</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -43,8 +43,8 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 </head>
 <body>
 <header>
-<h1>💸 Gastos con Amigos V5.2</h1>
-<div class="small" style="color:white">Invitaciones automáticas · Sin datos técnicos a la vista</div>
+<h1>💸 Gastos con Amigos</h1>
+<div class="small" style="color:white">Compartí gastos de forma simple</div>
 </header>
 
 <div class="wrap">
@@ -52,13 +52,14 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <section class="card">
 <div class="sectionTitle">
   <h2>Inicio</h2>
-  <button class="techToggle" onclick="toggleTechnicalSetup()">⚙ Configuración técnica</button>
 </div>
 <div id="welcomeMessage" class="welcome">
-  <b>Para entrar a un grupo:</b><br>abrí la invitación que te enviaron. La conexión se completa automáticamente.
+  <b>Bienvenido.</b><br>Elegí un grupo guardado o abrí una invitación.
 </div>
+
+<!-- Configuración reservada: se abre manteniendo presionado el título de la app -->
 <div id="technicalSetup" class="hidden">
-  <div class="notice"><b>Solo para el administrador:</b> configurá el servidor una única vez.</div>
+  <div class="notice"><b>Configuración reservada.</b></div>
   <label>URL del servidor</label>
   <input id="serverUrl" placeholder="https://script.google.com/macros/s/XXXXX/exec">
   <button onclick="saveServerUrl()">Guardar conexión</button>
@@ -95,10 +96,10 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 
   <div class="card">
     <div class="topline">
-      <h3>Entrar a un grupo existente</h3>
+      <h3>Recuperar un grupo</h3>
       <span class="status" id="connectionBadge">Sin conexión</span>
     </div>
-    <div class="small">Usá esta opción solo para recuperar un grupo mediante su código.</div>
+    <div class="small">Usá esta opción cuando ya tengas el código del grupo.</div>
     <label>Código del grupo</label>
     <input id="joinCode" placeholder="Ej: ABCD-1234">
     <button class="secondary" onclick="joinGroup()">Entrar</button>
@@ -133,9 +134,6 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <button class="gray" onclick="toggleAdvanced()">⚙ Ver enlace técnico</button>
 <button class="gray" onclick="loadGroup(true)">Actualizar lista</button>
 
-<div id="advancedShare" class="hidden" style="margin-top:10px">
-<div class="linkbox" id="shareLink"></div>
-</div>
 </div>
 
 <div class="card">
@@ -170,6 +168,29 @@ let autoTimer=null;
 let editingExpenseId=null;
 
 function getServerUrl(){ return localStorage.getItem('gca_server_url') || ''; }
+
+let adminPressTimer=null;
+function openReservedSetup(){
+  if(!window.technicalSetup)return;
+  technicalSetup.classList.toggle('hidden');
+  if(!technicalSetup.classList.contains('hidden') && window.serverUrl){
+    serverUrl.value=getServerUrl();
+    technicalSetup.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+}
+function enableReservedAccess(){
+  const headerTitle=document.querySelector('header h1');
+  if(!headerTitle)return;
+  const start=()=>{ adminPressTimer=setTimeout(openReservedSetup,3000); };
+  const stop=()=>{ clearTimeout(adminPressTimer); adminPressTimer=null; };
+  headerTitle.addEventListener('mousedown',start);
+  headerTitle.addEventListener('mouseup',stop);
+  headerTitle.addEventListener('mouseleave',stop);
+  headerTitle.addEventListener('touchstart',start,{passive:true});
+  headerTitle.addEventListener('touchend',stop);
+  headerTitle.addEventListener('touchcancel',stop);
+}
+
 function cleanUrl(url){
   url=String(url||'').trim();
   const i=url.indexOf('https://script.google.com/macros/s/');
@@ -197,8 +218,8 @@ function updateConnectionBadge(){
   serverUrl.value=getServerUrl();
   if(window.welcomeMessage){
     welcomeMessage.innerHTML=ok
-      ? '<b>Aplicación lista.</b><br>Podés abrir un grupo guardado, crear uno nuevo o entrar mediante una invitación.'
-      : '<b>Para entrar a un grupo:</b><br>abrí la invitación que te enviaron. La conexión se completa automáticamente.';
+      ? '<b>Aplicación lista.</b><br>Elegí un grupo guardado, creá uno nuevo o abrí una invitación.'
+      : '<b>Bienvenido.</b><br>Abrí la invitación que te enviaron para comenzar.';
   }
 }
 async function testConnection(){
@@ -215,7 +236,7 @@ function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;'
 
 async function api(action,payload){
   const url=getServerUrl();
-  if(!url) throw new Error('Todavía no hay conexión. Abrí una invitación o usá Configuración técnica.');
+  if(!url) throw new Error('Todavía no hay conexión. Abrí una invitación válida.');
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...(payload||{})})});
   const txt=await r.text();
   let data; try{data=JSON.parse(txt)}catch(e){throw new Error('El servidor no devolvió JSON: '+txt.slice(0,100))}
@@ -297,7 +318,7 @@ function cancelCreateGroup(){ groupName.value=''; participantsText.value=''; cre
 
 async function createSharedGroup(){
   try{
-    if(!getServerUrl()){ alert('Para crear un grupo, primero abrí Configuración técnica y guardá la conexión.'); return; }
+    if(!getServerUrl()){ alert('Esta instalación todavía no está preparada para crear grupos.'); return; }
     const name=groupName.value.trim();
     const participants=participantsText.value.split(',').map(x=>x.trim()).filter(Boolean);
     if(!name){alert('Escribí el nombre del grupo.');return}
@@ -349,7 +370,7 @@ function render(){
   participantsList.innerHTML=group.participants.map(p=>'<span class="person">'+escapeHtml(p)+' <button title="Quitar participante" onclick="removeParticipant(\''+String(p).replace(/'/g,"\\'")+'\')">×</button></span>').join('');
   payer.innerHTML='<option value="">-- Elegir quién pagó --</option>'+group.participants.map(p=>'<option>'+escapeHtml(p)+'</option>').join('');
   if(payerAnterior && group.participants.includes(payerAnterior)) payer.value=payerAnterior;
-  shareLink.textContent=getShareUrl();
+  if(window.shareLink) shareLink.textContent=getShareUrl();
   expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><b>'+escapeHtml(e.payer)+'</b> pagó <b>'+money(e.amount)+'</b><br>'+escapeHtml(e.concept||'Sin concepto')+'<div style="margin-top:7px"><button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button></div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
   renderResults();
 }
@@ -567,6 +588,7 @@ async function openInviteFromLink(){
 }
 
 window.addEventListener('load',async()=>{
+  enableReservedAccess();
   updateConnectionBadge();
   renderMyGroups();
   await openInviteFromLink();
