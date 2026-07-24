@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V5.4 - Mis grupos</title>
+<title>Gastos con Amigos V5.6 - Mis grupos</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -269,6 +269,15 @@ function getMyGroups(){
   }catch(e){ return []; }
 }
 function saveMyGroups(items){ localStorage.setItem('gca_my_groups',JSON.stringify(items)); }
+function getHiddenGroupIds(){
+  try{
+    const data=JSON.parse(localStorage.getItem('gca_hidden_groups')||'[]');
+    return Array.isArray(data)?data:[];
+  }catch(e){ return []; }
+}
+function saveHiddenGroupIds(items){ localStorage.setItem('gca_hidden_groups',JSON.stringify([...new Set(items)])); }
+function hideGroupId(id){ saveHiddenGroupIds([...getHiddenGroupIds(),id]); }
+function unhideGroupId(id){ saveHiddenGroupIds(getHiddenGroupIds().filter(x=>x!==id)); }
 
 async function syncMyGroupsFromServer(){
   if(!getServerUrl())return;
@@ -281,8 +290,9 @@ async function syncMyGroupsFromServer(){
     const byId={};
     localGroups.forEach(item=>{ if(item && item.id) byId[item.id]=item; });
 
+    const hiddenIds=new Set(getHiddenGroupIds());
     serverGroups.forEach(item=>{
-      if(!item || !item.id)return;
+      if(!item || !item.id || hiddenIds.has(item.id))return;
       const previous=byId[item.id]||{};
       byId[item.id]={
         id:item.id,
@@ -301,6 +311,7 @@ async function syncMyGroupsFromServer(){
 }
 function rememberGroup(g){
   if(!g || !g.id)return;
+  unhideGroupId(g.id);
   const items=getMyGroups().filter(x=>x.id!==g.id);
   items.unshift({id:g.id,name:g.name||'Grupo sin nombre',participants:Array.isArray(g.participants)?g.participants:[],updatedAt:g.updatedAt||new Date().toISOString()});
   saveMyGroups(items.slice(0,50));
@@ -351,7 +362,8 @@ async function renameSavedGroup(id){
 function removeSavedGroup(id){
   const item=getMyGroups().find(x=>x.id===id);
   if(!item)return;
-  if(!confirm('¿Quitar "'+item.name+'" de Mis grupos?\n\nNo se borran los gastos compartidos. Podrás recuperarlo con su enlace o código.'))return;
+  if(!confirm('¿Quitar "'+item.name+'" de este dispositivo?\n\nEl grupo seguirá existiendo y podrás recuperarlo con su enlace o código.'))return;
+  hideGroupId(id);
   saveMyGroups(getMyGroups().filter(x=>x.id!==id));
   renderMyGroups();
 }
