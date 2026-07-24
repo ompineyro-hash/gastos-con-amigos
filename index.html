@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V5.3 - Final</title>
+<title>Gastos con Amigos V5.4 - Mis grupos</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -38,6 +38,15 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 .techToggle{background:#475569}
 .welcome{background:#eff6ff;border-left:5px solid #2563eb;border-radius:10px;padding:12px;margin:10px 0}
 .person button{padding:2px 6px;margin:0;background:#b91c1c;border-radius:999px;font-size:11px}
+.closeCard{border:2px solid #0f766e}
+.memberSummary{background:#f8fafc;border-radius:10px;padding:10px;margin:7px 0}
+.memberSummary b{display:block;margin-bottom:4px}
+.closedBanner{background:#eff6ff;border-left:5px solid #2563eb;border-radius:10px;padding:11px;margin:10px 0}
+.pending{background:#fff7ed;border-left-color:#f97316}
+.settled{background:#f0fdf4;border-left-color:#16a34a}
+.paymentRow{display:flex;gap:8px;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:10px;padding:9px;margin:7px 0}
+.paymentRow button{margin:0;padding:7px 9px}
+@media(max-width:650px){.paymentRow{display:block}.paymentRow button{width:100%;margin-top:7px}}
 @media(max-width:650px){.row{display:block}button{width:100%;margin:4px 0}.topline{display:block}.groupItem{display:block}.groupItem button{margin-top:9px}.groupActions{display:block}.groupActions button{width:100%}}
 </style>
 </head>
@@ -159,6 +168,15 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <div id="summaryBox"></div>
 <div id="resultsBox"></div>
 </div>
+
+<div class="card closeCard">
+  <h3>🔒 Cierre del grupo</h3>
+  <div id="closeStatusBox"></div>
+  <div id="memberSummaryBox"></div>
+  <div id="paymentsBox"></div>
+  <button id="closeGroupBtn" onclick="closeGroup()">Cerrar grupo</button>
+  <button id="reopenGroupBtn" class="secondary hidden" onclick="reopenGroup()">Reabrir grupo</button>
+</div>
 </section>
 </div>
 
@@ -251,6 +269,36 @@ function getMyGroups(){
   }catch(e){ return []; }
 }
 function saveMyGroups(items){ localStorage.setItem('gca_my_groups',JSON.stringify(items)); }
+
+async function syncMyGroupsFromServer(){
+  if(!getServerUrl())return;
+  try{
+    const data=await api('listGroups');
+    const serverGroups=Array.isArray(data.groups)?data.groups:[];
+    if(!serverGroups.length)return;
+
+    const localGroups=getMyGroups();
+    const byId={};
+    localGroups.forEach(item=>{ if(item && item.id) byId[item.id]=item; });
+
+    serverGroups.forEach(item=>{
+      if(!item || !item.id)return;
+      const previous=byId[item.id]||{};
+      byId[item.id]={
+        id:item.id,
+        name:item.name||previous.name||'Grupo sin nombre',
+        participants:Array.isArray(item.participants)?item.participants:(previous.participants||[]),
+        updatedAt:item.updatedAt||previous.updatedAt||''
+      };
+    });
+
+    const merged=Object.values(byId).sort((a,b)=>new Date(b.updatedAt||0)-new Date(a.updatedAt||0));
+    saveMyGroups(merged.slice(0,100));
+    renderMyGroups();
+  }catch(e){
+    console.warn('No se pudo actualizar Mis grupos desde el servidor:',e);
+  }
+}
 function rememberGroup(g){
   if(!g || !g.id)return;
   const items=getMyGroups().filter(x=>x.id!==g.id);
@@ -323,7 +371,7 @@ async function createSharedGroup(){
     const participants=participantsText.value.split(',').map(x=>x.trim()).filter(Boolean);
     if(!name){alert('Escribí el nombre del grupo.');return}
     if(participants.length<2){alert('Cargá al menos 2 participantes separados por coma.');return}
-    const newGroup={id:uid(),name,participants,expenses:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    const newGroup={id:uid(),name,participants,expenses:[],status:"open",payments:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
     const data=await api('saveGroup',{group:newGroup});
     openGroup(data.group || newGroup);
   }catch(e){alert(e.message)}
@@ -339,6 +387,7 @@ async function joinGroup(){
 function openGroup(g){
   if(!g || !g.id){alert('El servidor no devolvió un grupo válido.');return}
   group=g;
+  normalizeGroupState();
   localStorage.setItem('gca_last_group',group.id);
   rememberGroup(group);
   home.classList.add('hidden');
@@ -373,6 +422,7 @@ function render(){
   if(window.shareLink) shareLink.textContent=getShareUrl();
   expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><b>'+escapeHtml(e.payer)+'</b> pagó <b>'+money(e.amount)+'</b><br>'+escapeHtml(e.concept||'Sin concepto')+'<div style="margin-top:7px"><button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button></div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
   renderResults();
+  renderCloseSection();
 }
 
 async function saveGroup(){
@@ -388,6 +438,7 @@ async function loadGroup(force=false){
   try{
     const data=await api('getGroup',{id:group.id});
     group=data.group;
+    normalizeGroupState();
     rememberGroup(group);
     render();
     syncStatus.textContent='Actualizado: '+new Date().toLocaleTimeString('es-AR');
@@ -395,6 +446,7 @@ async function loadGroup(force=false){
 }
 async function addParticipant(){
   try{
+    if(group && group.status!=="open"){alert("El grupo está cerrado. Reabrilo para modificarlo.");return;}
     const p=newParticipant.value.trim();
     if(!p){alert('Escribí un nombre.');return}
     if(group.participants.some(x=>x.toLowerCase()===p.toLowerCase())){alert('Ese participante ya está.');return}
@@ -404,6 +456,7 @@ async function addParticipant(){
 }
 async function removeParticipant(name){
   if(!group)return;
+  if(group.status!=="open"){alert("El grupo está cerrado. Reabrilo para modificarlo.");return;}
   if(group.participants.length<=2){ alert('El grupo debe conservar al menos 2 participantes.'); return; }
   const hasExpenses=group.expenses.some(e=>String(e.payer).toLowerCase()===String(name).toLowerCase());
   if(hasExpenses){ alert('No se puede quitar a '+name+' porque tiene gastos cargados. Primero editá o eliminá esos gastos.'); return; }
@@ -416,6 +469,7 @@ async function removeParticipant(name){
 }
 async function addExpense(){
   try{
+    if(group && group.status!=="open"){alert("El grupo está cerrado. Reabrilo para cargar o editar gastos.");return;}
     const payerName=payer.value;
     const amt=Number(amount.value);
     const conc=concept.value.trim();
@@ -455,6 +509,7 @@ async function addExpense(){
 }
 
 function editExpense(id){
+  if(group && group.status!=="open"){alert("El grupo está cerrado. Reabrilo para editar gastos.");return;}
   const expense=group.expenses.find(e=>e.id===id);
   if(!expense){alert('No se encontró el gasto.');return}
   editingExpenseId=id;
@@ -484,6 +539,7 @@ function resetExpenseForm(){
 }
 
 async function deleteExpense(id){
+  if(group && group.status!=="open"){alert("El grupo está cerrado. Reabrilo para eliminar gastos.");return;}
   const expense=group.expenses.find(e=>e.id===id);
   if(!expense){alert('No se encontró el gasto.');return}
   if(!confirm('¿Eliminar este gasto?\n\n'+expense.payer+' - '+money(expense.amount)+' - '+(expense.concept||'Sin concepto'))) return;
@@ -519,6 +575,111 @@ function renderResults(){
   }
   resultsBox.innerHTML=lines.length?lines.map(l=>'<div class="resultLine">'+escapeHtml(l)+'</div>').join(''):'<div class="resultLine">Todos están saldados.</div>';
 }
+
+function normalizeGroupState(){
+  if(!group)return;
+  if(!group.status) group.status='open';
+  if(!Array.isArray(group.payments)) group.payments=[];
+}
+
+function calculateBalances(){
+  const total=(group.expenses||[]).reduce((a,e)=>a+Number(e.amount||0),0);
+  const per=group.participants.length?total/group.participants.length:0;
+  const paid={}; const balance={};
+  group.participants.forEach(p=>{paid[p]=0;balance[p]=0;});
+  (group.expenses||[]).forEach(e=>{ if(paid[e.payer]!==undefined) paid[e.payer]+=Number(e.amount||0); });
+  group.participants.forEach(p=>{ balance[p]=paid[p]-per; });
+  return {total,per,paid,balance};
+}
+
+function paymentKey(from,to){ return String(from)+'|||'+String(to); }
+function isPaymentDone(from,to){
+  normalizeGroupState();
+  const key=paymentKey(from,to);
+  return group.payments.some(p=>p.key===key && p.done);
+}
+
+function buildTransfers(){
+  const calc=calculateBalances();
+  const debtors=[],creditors=[];
+  Object.entries(calc.balance).forEach(([p,v])=>{if(v<-0.01)debtors.push({p,amount:-v});if(v>0.01)creditors.push({p,amount:v});});
+  debtors.sort((a,b)=>b.amount-a.amount); creditors.sort((a,b)=>b.amount-a.amount);
+  const rows=[]; let i=0,j=0;
+  while(i<debtors.length&&j<creditors.length){
+    const pay=Math.min(debtors[i].amount,creditors[j].amount);
+    if(pay>0.01) rows.push({from:debtors[i].p,to:creditors[j].p,amount:pay,key:paymentKey(debtors[i].p,creditors[j].p)});
+    debtors[i].amount-=pay; creditors[j].amount-=pay;
+    if(debtors[i].amount<=0.01)i++; if(creditors[j].amount<=0.01)j++;
+  }
+  return rows;
+}
+
+function renderCloseSection(){
+  if(!group || !window.closeStatusBox)return;
+  normalizeGroupState();
+  const calc=calculateBalances();
+  const transfers=buildTransfers();
+  const pending=transfers.filter(t=>!isPaymentDone(t.from,t.to));
+  const allSettled=transfers.length===0 || pending.length===0;
+  const label=group.status==='open'?'Grupo abierto':(allSettled?'Grupo cerrado y saldado':'Grupo cerrado con deudas pendientes');
+  const cls=group.status==='open'?'closedBanner':('closedBanner '+(allSettled?'settled':'pending'));
+  closeStatusBox.innerHTML='<div class="'+cls+'"><b>'+label+'</b></div>';
+
+  memberSummaryBox.innerHTML=group.participants.map(p=>{
+    const saldo=calc.balance[p]||0;
+    const saldoTxt=(saldo>=0?'+':'')+money(saldo);
+    return '<div class="memberSummary"><b>'+escapeHtml(p)+'</b>Pagó: '+money(calc.paid[p])+' · Le correspondía: '+money(calc.per)+' · Saldo: '+saldoTxt+'</div>';
+  }).join('');
+
+  if(!transfers.length){
+    paymentsBox.innerHTML='<div class="resultLine">Todos están saldados.</div>';
+  }else{
+    paymentsBox.innerHTML='<h4>Pagos entre participantes</h4>'+transfers.map(t=>{
+      const done=isPaymentDone(t.from,t.to);
+      return '<div class="paymentRow"><div><b>'+escapeHtml(t.from)+'</b> debe '+money(t.amount)+' a <b>'+escapeHtml(t.to)+'</b><br><span class="small">'+(done?'✅ Pago registrado':'⏳ Pendiente')+'</span></div>'+
+        (group.status==='open'?'':'<button class="'+(done?'gray':'secondary')+'" onclick="togglePayment(\''+String(t.from).replace(/'/g,"\\'")+'\',\''+String(t.to).replace(/'/g,"\\'")+'\')">'+(done?'Marcar pendiente':'Marcar pagado')+'</button>')+'</div>';
+    }).join('');
+  }
+
+  closeGroupBtn.classList.toggle('hidden',group.status!=='open');
+  reopenGroupBtn.classList.toggle('hidden',group.status==='open');
+  const disabled=group.status!=='open';
+  ['newParticipant','payer','amount','concept','saveExpenseBtn','cancelEditBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled;});
+}
+
+async function closeGroup(){
+  if(!group || group.status!=='open')return;
+  if(!group.expenses.length){alert('No hay gastos para cerrar.');return;}
+  if(!confirm('¿Cerrar este grupo? Después se podrá reabrir.'))return;
+  try{
+    group.status='closed';
+    group.closedAt=new Date().toISOString();
+    await saveGroup();
+    render();
+  }catch(e){alert(e.message);}
+}
+
+async function reopenGroup(){
+  if(!group || group.status==='open')return;
+  if(!confirm('¿Reabrir el grupo para volver a modificar gastos o participantes?'))return;
+  try{
+    group.status='open';
+    group.reopenedAt=new Date().toISOString();
+    await saveGroup();
+    render();
+  }catch(e){alert(e.message);}
+}
+
+async function togglePayment(from,to){
+  if(!group || group.status==='open')return;
+  normalizeGroupState();
+  const key=paymentKey(from,to);
+  const existing=group.payments.find(p=>p.key===key);
+  if(existing){existing.done=!existing.done; existing.updatedAt=new Date().toISOString();}
+  else{group.payments.push({key,from,to,done:true,updatedAt:new Date().toISOString()});}
+  try{await saveGroup();render();}catch(e){alert(e.message);}
+}
+
 function toggleAdvanced(){advancedShare.classList.toggle('hidden');}
 
 async function shareInvite(){
@@ -591,6 +752,7 @@ window.addEventListener('load',async()=>{
   enableReservedAccess();
   updateConnectionBadge();
   renderMyGroups();
+  await syncMyGroupsFromServer();
   await openInviteFromLink();
 });
 </script>
