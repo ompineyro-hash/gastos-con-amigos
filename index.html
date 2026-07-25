@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V5.6 - Mis grupos</title>
+<title>Gastos con Amigos V6.0 FINAL</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -140,7 +140,6 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <div class="notice ok"><b>Invitación directa:</b><br>La otra persona toca el enlace y entra al grupo sin escribir códigos.</div>
 <button class="secondary" onclick="shareInvite()">📤 Compartir invitación</button>
 <button class="secondary" onclick="copyInvite()">📋 Copiar invitación</button>
-<button class="gray" onclick="toggleAdvanced()">⚙ Ver enlace técnico</button>
 <button class="gray" onclick="loadGroup(true)">Actualizar lista</button>
 
 </div>
@@ -398,6 +397,7 @@ async function joinGroup(){
 }
 function openGroup(g){
   if(!g || !g.id){alert('El servidor no devolvió un grupo válido.');return}
+  stopAutoRefresh();
   group=g;
   normalizeGroupState();
   localStorage.setItem('gca_last_group',group.id);
@@ -405,7 +405,7 @@ function openGroup(g){
   home.classList.add('hidden');
   groupView.classList.remove('hidden');
   render();
-  
+  startAutoRefresh();
 }
 function backHome(){
   stopAutoRefresh();
@@ -445,16 +445,20 @@ async function saveGroup(){
 }
 async function loadGroup(force=false){
   if(!group)return;
-  const escribiendo=(amount && amount.value)||(concept && concept.value)||(payer && payer.value);
+  const escribiendo=(amount && amount.value)||(concept && concept.value)||(payer && payer.value)||editingExpenseId;
   if(escribiendo && !force){ syncStatus.textContent='Pausa mientras cargás'; return; }
   try{
-    const data=await api('getGroup',{id:group.id});
+    const currentId=group.id;
+    const previousUpdatedAt=group.updatedAt||'';
+    const data=await api('getGroup',{id:currentId});
+    if(!data.group || data.group.id!==currentId)return;
+    const changed=(data.group.updatedAt||'')!==previousUpdatedAt;
     group=data.group;
     normalizeGroupState();
     rememberGroup(group);
-    render();
-    syncStatus.textContent='Actualizado: '+new Date().toLocaleTimeString('es-AR');
-  }catch(e){ syncStatus.textContent='No se pudo verificar'; }
+    if(changed || force) render();
+    syncStatus.textContent=(changed?'Actualizado':'Al día')+': '+new Date().toLocaleTimeString('es-AR');
+  }catch(e){ syncStatus.textContent='Sin conexión'; }
 }
 async function addParticipant(){
   try{
@@ -723,8 +727,19 @@ function inviteText(){
 }
 function copyInvite(){ navigator.clipboard.writeText(inviteText()).then(()=>alert('Invitación copiada.')); }
 function openWhatsapp(){ window.open('https://wa.me/?text='+encodeURIComponent(inviteText()),'_blank'); }
-function startAutoRefresh(){}
-function stopAutoRefresh(){}
+function startAutoRefresh(){
+  stopAutoRefresh();
+  if(!group)return;
+  autoTimer=setInterval(()=>{
+    if(!document.hidden && group) loadGroup(false);
+  },4000);
+}
+function stopAutoRefresh(){
+  if(autoTimer){
+    clearInterval(autoTimer);
+    autoTimer=null;
+  }
+}
 async function openInviteFromLink(){
   const hash=location.hash.replace(/^#/,'');
   if(!hash)return;
@@ -759,6 +774,12 @@ async function openInviteFromLink(){
     alert('No se pudo abrir el grupo invitado: '+e.message);
   }
 }
+
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && group) loadGroup(false);
+});
+
+window.addEventListener('beforeunload',stopAutoRefresh);
 
 window.addEventListener('load',async()=>{
   enableReservedAccess();
