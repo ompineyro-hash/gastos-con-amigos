@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V6.0 FINAL</title>
+<title>Gastos con Amigos V6.8 RESULTADO Y CIERRE LIMPIO</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -48,6 +48,178 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 .paymentRow button{margin:0;padding:7px 9px}
 @media(max-width:650px){.paymentRow{display:block}.paymentRow button{width:100%;margin-top:7px}}
 @media(max-width:650px){.row{display:block}button{width:100%;margin:4px 0}.topline{display:block}.groupItem{display:block}.groupItem button{margin-top:9px}.groupActions{display:block}.groupActions button{width:100%}}
+
+/* V6.1 UX: participantes cerca y compactos */
+.groupHeaderCard{padding:12px 14px 10px}
+.backBtn{padding:7px 10px;margin-bottom:6px}
+.groupTopline h2{margin:4px 0 2px}
+.groupMeta{margin-top:4px}
+.groupMiniSummary{margin-top:5px}
+.participantsCompact{margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0}
+.participantsHead h3{margin:0 0 5px;font-size:17px}
+.participantsCompact .person{padding:5px 8px;margin:2px;font-size:14px}
+.participantsCompact .person button{font-size:10px;padding:1px 5px}
+.addParticipantCompact{display:flex;gap:6px;align-items:center;margin-top:6px}
+.addParticipantCompact input{margin:0;padding:8px;min-width:0}
+.addParticipantCompact button{margin:0;padding:8px 10px;white-space:nowrap;flex:0 0 auto}
+.expenseCard{margin-top:8px}
+.expenseCard h3,.shareCard h3{margin:0 0 8px}
+.compactNotice{margin:6px 0;padding:8px}
+.shareActions{display:flex;gap:6px;flex-wrap:wrap}
+.shareActions button{margin:0}
+@media(max-width:650px){
+  .addParticipantCompact{display:flex}
+  .addParticipantCompact input{width:auto;flex:1}
+  .addParticipantCompact button{width:auto}
+  .shareActions{display:block}
+  .shareActions button{width:100%;margin:4px 0}
+}
+
+/* V6.2 COMPACTA: datos fijos juntos y movimientos con scroll */
+header{padding:7px 10px}
+header h1{font-size:20px;line-height:1.05}
+header .small{font-size:11px;line-height:1.1}
+.wrap{padding:7px 10px}
+.card{padding:10px 12px;margin:7px 0;border-radius:12px}
+h2,h3{margin-top:4px;margin-bottom:7px}
+.fixedWorkspace{display:grid;grid-template-columns:1fr 1.12fr;gap:8px;align-items:start}
+.fixedWorkspace>.card{margin:0;height:100%}
+.groupHeaderCard{padding:9px 11px}
+.backBtn{padding:5px 8px;margin:0 0 4px;font-size:12px}
+.groupTopline{gap:4px}
+.groupTopline h2{font-size:21px;margin:1px 0}
+.status{font-size:12px;padding:5px 7px}
+.badge{padding:4px 7px;font-size:11px}
+.groupMiniSummary{font-size:12px;margin-top:3px}
+.participantsCompact{margin-top:6px;padding-top:5px}
+.participantsHead h3{font-size:15px;margin:0 0 3px}
+.participantsCompact .person{padding:3px 6px;margin:1px;font-size:13px}
+.addParticipantCompact{margin-top:4px;gap:4px}
+.addParticipantCompact input{padding:6px 8px;font-size:14px;height:32px}
+.addParticipantCompact button{padding:6px 8px;font-size:12px;height:32px}
+.expenseCard{padding:9px 11px}
+.expenseCard h3{font-size:17px;margin:0 0 4px}
+.compactNotice{font-size:12px;padding:5px 7px;margin:4px 0}
+.expenseCard label{font-size:13px}
+.expenseCard input,.expenseCard select{padding:7px 8px;margin:3px 0;font-size:14px;height:34px}
+.expenseCard button{padding:7px 9px;font-size:13px}
+.expensesCard{padding:9px 11px}
+.expensesCard h3{margin:0 0 5px;font-size:17px}
+.expensesScroll{max-height:210px;overflow-y:auto;padding-right:4px;scrollbar-gutter:stable}
+.expensesScroll .expense{padding:7px;margin:5px 0}
+.expensesScroll .expense button{padding:6px 8px;font-size:12px}
+.resultLine{padding:7px 8px;margin:5px 0}
+.memberSummary{padding:7px 8px;margin:5px 0}
+.closedBanner{padding:7px 8px;margin:6px 0}
+.paymentRow{padding:7px 8px;margin:5px 0}
+.closeCard,.shareCard{padding:9px 11px}
+.closeCard h3,.shareCard h3{margin:0 0 6px}
+@media(max-width:760px){
+  .fixedWorkspace{display:block}
+  .fixedWorkspace>.card{margin:7px 0;height:auto}
+  .expensesScroll{max-height:260px}
+}
+
+
+/* V6.3 SCROLL: zona fija arriba y todo lo variable desplazable abajo */
+body.group-open{overflow:hidden}
+body.group-open .wrap{height:calc(100vh - 48px);overflow:hidden;display:block}
+body.group-open #groupView{height:100%;display:flex;flex-direction:column;min-height:0}
+body.group-open .fixedWorkspace{flex:0 0 auto}
+.variableScroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:4px;margin-top:7px;scrollbar-gutter:stable}
+.variableScroll>.card:first-child{margin-top:0}
+.variableScroll>.card:last-child{margin-bottom:4px}
+.variableScroll .expensesScroll{max-height:none;overflow:visible;padding-right:0}
+@media(max-width:760px){
+  body.group-open .wrap{height:calc(100vh - 48px)}
+  .variableScroll{margin-top:4px;padding-right:2px}
+}
+
+/* V6.4: movimientos en dos columnas para aprovechar el ancho */
+#expensesList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#expensesList .expense{margin:0;min-width:0;height:100%;display:flex;flex-direction:column}
+#expensesList .expense>div{margin-top:auto!important;padding-top:5px}
+#expensesList .expense button{margin:2px 2px 0 0}
+@media(max-width:760px){
+  #expensesList{grid-template-columns:1fr}
+}
+
+/* V6.5 PULIDA: misma lógica, mejor lectura y menos altura */
+.expenseCard .row{display:grid;grid-template-columns:1.15fr .85fr;gap:7px}
+.expenseCard #concept{margin-bottom:4px}
+#saveExpenseBtn{min-width:145px}
+#expensesList .expense{padding:8px 9px;border-left-width:4px}
+.expenseTop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.expensePayer{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.expenseAmount{font-size:16px;color:#0f766e;white-space:nowrap}
+.expenseConcept{font-size:13px;color:#475569;margin-top:3px;line-height:1.25;min-height:16px;overflow-wrap:anywhere}
+.expenseActions{display:flex;justify-content:flex-end;gap:4px;margin-top:auto;padding-top:6px}
+.expenseActions button{padding:5px 7px!important;font-size:11px!important}
+.variableScroll>.card:not(.expensesCard){padding:8px 10px}
+.variableScroll>.card:not(.expensesCard) h3{font-size:16px;margin:0 0 5px}
+#summaryBox .resultLine{font-size:13px}
+#resultsBox{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#resultsBox .resultLine{margin:0;font-size:13px}
+#memberSummaryBox{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#memberSummaryBox .memberSummary{margin:0}
+.shareCard .notice{margin-bottom:6px}
+@media(max-width:760px){
+  .expenseCard .row{grid-template-columns:1fr}
+  #resultsBox,#memberSummaryBox{grid-template-columns:1fr}
+  #saveExpenseBtn{width:100%}
+}
+
+
+/* V6.6 GUIADA: ayuda clara, participantes y cierre compactos */
+.nextStepBox{background:#eff6ff;border-left:5px solid #2563eb;border-radius:10px;padding:7px 9px;margin:6px 0 0;display:flex;gap:8px;align-items:flex-start}
+.nextStepIcon{font-size:18px;line-height:1}
+.nextStepText{font-size:13px;line-height:1.3;color:#334155}
+.nextStepText b{display:block;color:#1e3a8a;margin-bottom:1px}
+.participantsCompact #participantsList{display:flex;flex-wrap:wrap;gap:3px;max-height:58px;overflow-y:auto;padding-right:2px}
+.participantsCompact .person{margin:0}
+.addParticipantToggle{background:#2563eb;padding:5px 8px!important;font-size:12px!important;margin:4px 0 0!important}
+.addParticipantCompact.hiddenForm{display:none}
+.addParticipantCompact{animation:openForm .15s ease-out}
+@keyframes openForm{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+#expensesList .expense{min-height:78px}
+.expenseActions{padding-top:3px}
+.expenseActions button{padding:4px 6px!important}
+.memberSummary{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12px;line-height:1.25}
+.memberSummary b{display:inline;margin:0;font-size:13px}
+.memberSummary .memberNumbers{color:#475569}
+.memberSummary .positive{color:#15803d;font-weight:bold}
+.memberSummary .negative{color:#b91c1c;font-weight:bold}
+#paymentsBox h4{margin:7px 0 4px}
+@media(max-width:760px){
+  .nextStepBox{padding:7px 8px}
+  .participantsCompact #participantsList{max-height:82px}
+  #expensesList .expense{min-height:auto}
+}
+
+/* V6.7 CIERRE SIMPLE: guía de una línea y terminación visual */
+.nextStepBox{padding:6px 8px;margin-top:5px;align-items:center;gap:6px;min-height:32px}
+.nextStepIcon{font-size:16px}
+.nextStepText{font-size:12.5px;line-height:1.2}
+.nextStepText b{display:inline;margin:0 5px 0 0}
+.nextStepBox.step-info{background:#eff6ff;border-left-color:#2563eb}
+.nextStepBox.step-info .nextStepText b{color:#1e3a8a}
+.nextStepBox.step-warn{background:#fffbeb;border-left-color:#f59e0b}
+.nextStepBox.step-warn .nextStepText b{color:#92400e}
+.nextStepBox.step-done{background:#f0fdf4;border-left-color:#16a34a}
+.nextStepBox.step-done .nextStepText b{color:#166534}
+.closeCard{border-width:1px}
+.closeCard .closedBanner{padding:6px 8px;margin:4px 0 6px}
+#memberSummaryBox{gap:4px}
+.memberSummary{padding:6px 7px}
+.paymentRow{padding:7px 8px}
+#closeGroupBtn,#reopenGroupBtn{padding:8px 11px}
+@media(max-width:760px){.nextStepText b{display:block;margin-bottom:1px}}
+
+/* V6.8: Resultado con estado por color y cierre sin datos repetidos */
+#resultsBox .resultPending{background:#fffbeb;border-left-color:#f59e0b;color:#78350f}
+#resultsBox .resultDone{background:#f0fdf4;border-left-color:#16a34a;color:#14532d}
+.closeCard #paymentsBox{margin-top:2px}
+
 </style>
 </head>
 <body>
@@ -58,6 +230,9 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 
 <div class="wrap">
 
+
+
+<section id="home">
 <section class="card">
 <div class="sectionTitle">
   <h2>Inicio</h2>
@@ -76,8 +251,6 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
   <div id="serverStatus" class="small"></div>
 </div>
 </section>
-
-<section id="home">
   <div class="card">
     <div class="sectionTitle">
       <h2>Mis grupos</h2>
@@ -116,36 +289,33 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 </section>
 
 <section id="groupView" class="hidden">
-<div class="card">
-<button class="gray" onclick="backHome()">← Volver</button>
-<div class="topline">
+<div class="fixedWorkspace">
+<div class="card groupHeaderCard">
+<button class="gray backBtn" onclick="backHome()">← Volver</button>
+<div class="topline groupTopline">
 <h2 id="title"></h2>
 <span class="status" id="syncStatus">Sin verificar</span>
 </div>
-<div><span class="badge">Grupo compartido</span> <span id="groupCode" class="badge"></span></div>
-<div id="groupMiniSummary" class="small" style="margin-top:8px"></div>
+<div class="groupMeta"><span class="badge">Grupo compartido</span> <span id="groupCode" class="badge"></span></div>
+<div id="groupMiniSummary" class="small groupMiniSummary"></div>
+<div id="nextStepBox" class="nextStepBox"></div>
 
-<h3>Participantes</h3>
-<div id="participantsList"></div>
-
-<div class="row">
-<div>
-<label>Agregar participante</label>
-<input id="newParticipant" placeholder="Nombre">
+<div class="participantsCompact">
+  <div class="participantsHead">
+    <h3>Participantes</h3>
+  </div>
+  <div id="participantsList"></div>
+  <button id="addParticipantToggle" class="addParticipantToggle" onclick="toggleParticipantForm()">＋ Agregar participante</button>
+  <div id="addParticipantForm" class="addParticipantCompact hiddenForm">
+    <input id="newParticipant" placeholder="Nombre del participante" onkeydown="if(event.key==='Enter') addParticipant()">
+    <button onclick="addParticipant()">Agregar</button>
+  </div>
 </div>
-<div><button onclick="addParticipant()">Agregar</button></div>
-</div>
-
-<h3>Compartir grupo</h3>
-<div class="notice ok"><b>Invitación directa:</b><br>La otra persona toca el enlace y entra al grupo sin escribir códigos.</div>
-<button class="secondary" onclick="shareInvite()">📤 Compartir invitación</button>
-<button class="secondary" onclick="copyInvite()">📋 Copiar invitación</button>
-<button class="gray" onclick="loadGroup(true)">Actualizar lista</button>
-
 </div>
 
-<div class="card">
-<h3 id="expenseFormTitle">Cargar gasto</h3><div class="notice ok">La selección no cambia mientras cargás. La lista se actualiza recién después de guardar.</div>
+<div class="card expenseCard">
+<h3 id="expenseFormTitle">Cargar gasto</h3>
+<div class="notice ok compactNotice">La selección no cambia mientras cargás. La lista se actualiza después de guardar.</div>
 <div class="row">
 <div><label>Quién pagó</label><select id="payer"></select></div>
 <div><label>Importe</label><input id="amount" type="number" placeholder="Ej: 30000"></div>
@@ -156,10 +326,12 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <button id="cancelEditBtn" class="gray hidden" onclick="cancelEditExpense()">Cancelar edición</button>
 <div id="expenseStatus" class="small"></div>
 </div>
+</div>
 
-<div class="card">
+<div class="variableScroll" id="variableScroll">
+<div class="card expensesCard">
 <h3>Gastos cargados</h3>
-<div id="expensesList"></div>
+<div id="expensesList" class="expensesScroll"></div>
 </div>
 
 <div class="card">
@@ -171,10 +343,20 @@ input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;
 <div class="card closeCard">
   <h3>🔒 Cierre del grupo</h3>
   <div id="closeStatusBox"></div>
-  <div id="memberSummaryBox"></div>
   <div id="paymentsBox"></div>
   <button id="closeGroupBtn" onclick="closeGroup()">Cerrar grupo</button>
   <button id="reopenGroupBtn" class="secondary hidden" onclick="reopenGroup()">Reabrir grupo</button>
+</div>
+
+<div class="card shareCard">
+<h3>Compartir grupo</h3>
+<div class="notice ok compactNotice"><b>Invitación directa:</b> la otra persona toca el enlace y entra sin escribir códigos.</div>
+<div class="shareActions">
+<button class="secondary" onclick="shareInvite()">📤 Compartir invitación</button>
+<button class="secondary" onclick="copyInvite()">📋 Copiar invitación</button>
+<button class="gray" onclick="loadGroup(true)">Actualizar lista</button>
+</div>
+</div>
 </div>
 </section>
 </div>
@@ -404,6 +586,8 @@ function openGroup(g){
   rememberGroup(group);
   home.classList.add('hidden');
   groupView.classList.remove('hidden');
+  document.body.classList.add('group-open');
+  if(window.variableScroll) variableScroll.scrollTop=0;
   render();
   startAutoRefresh();
 }
@@ -413,12 +597,45 @@ function backHome(){
   groupName.value=''; participantsText.value=''; joinCode.value='';
   createGroupCard.classList.add('hidden');
   groupView.classList.add('hidden'); home.classList.remove('hidden');
+  document.body.classList.remove('group-open');
   renderMyGroups(); window.scrollTo({top:0,behavior:'smooth'});
 }
 function getShareUrl(){
   const publicBase='https://ompineyro-hash.github.io/gastos-con-amigos/';
   const server=getServerUrl();
   return publicBase+'#grupo='+encodeURIComponent(group.id)+'&servidor='+encodeURIComponent(server);
+}
+
+function toggleParticipantForm(forceOpen){
+  const form=document.getElementById('addParticipantForm');
+  const btn=document.getElementById('addParticipantToggle');
+  if(!form || !btn)return;
+  const open=typeof forceOpen==='boolean'?forceOpen:form.classList.contains('hiddenForm');
+  form.classList.toggle('hiddenForm',!open);
+  btn.textContent=open?'− Ocultar':'＋ Agregar participante';
+  if(open && window.newParticipant) setTimeout(()=>newParticipant.focus(),50);
+}
+
+function renderNextStep(){
+  const box=document.getElementById('nextStepBox');
+  if(!box || !group)return;
+  normalizeGroupState();
+  const transfers=buildTransfers();
+  const pending=transfers.filter(t=>!isPaymentDone(t.from,t.to));
+  let icon='🧭', title='Siguiente paso:', text='', state='step-info';
+  if(group.participants.length<2){
+    text='Agregá al menos dos participantes.';
+  }else if(!group.expenses.length){
+    text='Cargá el primer gasto.';
+  }else if(group.status==='open'){
+    text='Cargá los gastos que falten o revisá el resultado.';
+  }else if(pending.length){
+    icon='💳'; text='Registrá los pagos pendientes.'; state='step-warn';
+  }else{
+    icon='✅'; title='Listo:'; text='El grupo está saldado.'; state='step-done';
+  }
+  box.className='nextStepBox '+state;
+  box.innerHTML='<div class="nextStepIcon">'+icon+'</div><div class="nextStepText"><b>'+title+'</b>'+text+'</div>';
 }
 
 function render(){
@@ -429,10 +646,11 @@ function render(){
   groupMiniSummary.textContent='👥 '+group.participants.length+' participantes · 💰 '+group.expenses.length+' gastos · 🕒 '+formatLastActivity(group.updatedAt);
   if(window.simpleGroupCode) simpleGroupCode.textContent=group.id;
   participantsList.innerHTML=group.participants.map(p=>'<span class="person">'+escapeHtml(p)+' <button title="Quitar participante" onclick="removeParticipant(\''+String(p).replace(/'/g,"\\'")+'\')">×</button></span>').join('');
+  renderNextStep();
   payer.innerHTML='<option value="">-- Elegir quién pagó --</option>'+group.participants.map(p=>'<option>'+escapeHtml(p)+'</option>').join('');
   if(payerAnterior && group.participants.includes(payerAnterior)) payer.value=payerAnterior;
   if(window.shareLink) shareLink.textContent=getShareUrl();
-  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><b>'+escapeHtml(e.payer)+'</b> pagó <b>'+money(e.amount)+'</b><br>'+escapeHtml(e.concept||'Sin concepto')+'<div style="margin-top:7px"><button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button></div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
+  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><div class="expenseTop"><b class="expensePayer">'+escapeHtml(e.payer)+'</b><b class="expenseAmount">'+money(e.amount)+'</b></div><div class="expenseConcept">'+escapeHtml(e.concept||'Sin concepto')+'</div><div class="expenseActions"><button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button></div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
   renderResults();
   renderCloseSection();
 }
@@ -467,6 +685,7 @@ async function addParticipant(){
     if(!p){alert('Escribí un nombre.');return}
     if(group.participants.some(x=>x.toLowerCase()===p.toLowerCase())){alert('Ese participante ya está.');return}
     group.participants.push(p); newParticipant.value='';
+    toggleParticipantForm(false);
     await saveGroup(); render();
   }catch(e){alert(e.message)}
 }
@@ -585,11 +804,14 @@ function renderResults(){
   const lines=[]; let i=0,j=0;
   while(i<debtors.length && j<creditors.length){
     const pay=Math.min(debtors[i].amount,creditors[j].amount);
-    if(pay>0.01)lines.push(debtors[i].p+' debe '+money(pay)+' a '+creditors[j].p);
+    if(pay>0.01){
+      const from=debtors[i].p, to=creditors[j].p;
+      lines.push({text:from+' debe '+money(pay)+' a '+to, done:isPaymentDone(from,to)});
+    }
     debtors[i].amount-=pay; creditors[j].amount-=pay;
     if(debtors[i].amount<=0.01)i++; if(creditors[j].amount<=0.01)j++;
   }
-  resultsBox.innerHTML=lines.length?lines.map(l=>'<div class="resultLine">'+escapeHtml(l)+'</div>').join(''):'<div class="resultLine">Todos están saldados.</div>';
+  resultsBox.innerHTML=lines.length?lines.map(l=>'<div class="resultLine '+(l.done?'resultDone':'resultPending')+'">'+escapeHtml(l.text)+'</div>').join(''):'<div class="resultLine resultDone">Todos están saldados.</div>';
 }
 
 function normalizeGroupState(){
@@ -641,12 +863,6 @@ function renderCloseSection(){
   const cls=group.status==='open'?'closedBanner':('closedBanner '+(allSettled?'settled':'pending'));
   closeStatusBox.innerHTML='<div class="'+cls+'"><b>'+label+'</b></div>';
 
-  memberSummaryBox.innerHTML=group.participants.map(p=>{
-    const saldo=calc.balance[p]||0;
-    const saldoTxt=(saldo>=0?'+':'')+money(saldo);
-    return '<div class="memberSummary"><b>'+escapeHtml(p)+'</b>Pagó: '+money(calc.paid[p])+' · Le correspondía: '+money(calc.per)+' · Saldo: '+saldoTxt+'</div>';
-  }).join('');
-
   if(!transfers.length){
     paymentsBox.innerHTML='<div class="resultLine">Todos están saldados.</div>';
   }else{
@@ -660,7 +876,7 @@ function renderCloseSection(){
   closeGroupBtn.classList.toggle('hidden',group.status!=='open');
   reopenGroupBtn.classList.toggle('hidden',group.status==='open');
   const disabled=group.status!=='open';
-  ['newParticipant','payer','amount','concept','saveExpenseBtn','cancelEditBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled;});
+  ['newParticipant','addParticipantToggle','payer','amount','concept','saveExpenseBtn','cancelEditBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled;});
 }
 
 async function closeGroup(){
