@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V6.8 RESULTADO Y CIERRE LIMPIO</title>
+<title>Gastos con Amigos V7.1 MÓVIL</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -219,6 +219,17 @@ body.group-open .fixedWorkspace{flex:0 0 auto}
 #resultsBox .resultPending{background:#fffbeb;border-left-color:#f59e0b;color:#78350f}
 #resultsBox .resultDone{background:#f0fdf4;border-left-color:#16a34a;color:#14532d}
 .closeCard #paymentsBox{margin-top:2px}
+
+/* V7.1 MÓVIL: un único scroll natural en celular; escritorio queda igual */
+@media(max-width:760px){
+  body.group-open{overflow-y:auto;overflow-x:hidden}
+  body.group-open .wrap{height:auto;overflow:visible;display:block}
+  body.group-open #groupView{height:auto;display:block;min-height:0}
+  body.group-open .fixedWorkspace{display:block}
+  .variableScroll{flex:none;min-height:0;overflow:visible;padding-right:0;margin-top:4px}
+  .variableScroll .expensesScroll{max-height:none;overflow:visible;padding-right:0}
+  .participantsCompact #participantsList{max-height:none;overflow:visible;padding-right:0}
+}
 
 </style>
 </head>
