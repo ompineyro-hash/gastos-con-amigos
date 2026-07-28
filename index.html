@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V7.1 MÓVIL</title>
+<title>Gastos con Amigos V8.0 PAGOS Y COMPROBANTES</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -231,6 +231,22 @@ body.group-open .fixedWorkspace{flex:0 0 auto}
   .participantsCompact #participantsList{max-height:none;overflow:visible;padding-right:0}
 }
 
+
+/* V8.0: pagos reales y comprobantes */
+.receiptField{margin-top:6px;padding:8px;border:1px dashed #94a3b8;border-radius:10px;background:#f8fafc}
+.receiptField input[type=file]{padding:6px;background:white}
+.receiptPreview{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.receiptBtn{background:#7c3aed}
+.paymentHistory{margin-top:10px}
+.paymentHistoryItem{background:#f8fafc;border-left:4px solid #2563eb;border-radius:9px;padding:8px;margin:6px 0}
+.paymentHistoryActions,.transferActions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.paymentHistoryActions button,.transferActions button{padding:6px 8px;font-size:12px;margin:0}
+.receiptModal{position:fixed;inset:0;background:#000c;z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px}
+.receiptModal.hidden{display:none!important}
+.receiptModalBox{background:white;border-radius:12px;max-width:95vw;max-height:95vh;padding:10px;overflow:auto;text-align:center}
+.receiptModalBox img{max-width:88vw;max-height:78vh;display:block;margin:auto}
+@media(max-width:760px){.transferActions,.paymentHistoryActions{display:block}.transferActions button,.paymentHistoryActions button{width:100%;margin-top:5px}}
+
 </style>
 </head>
 <body>
@@ -333,6 +349,11 @@ body.group-open .fixedWorkspace{flex:0 0 auto}
 </div>
 <label>Concepto</label>
 <input id="concept" placeholder="Ej: carne, bebidas, hotel">
+<div class="receiptField">
+  <label>📷 Comprobante (opcional)</label>
+  <input id="expenseReceiptFile" type="file" accept="image/*" capture="environment">
+  <div id="expenseReceiptPreview" class="receiptPreview small"></div>
+</div>
 <button id="saveExpenseBtn" onclick="addExpense()">Guardar gasto</button>
 <button id="cancelEditBtn" class="gray hidden" onclick="cancelEditExpense()">Cancelar edición</button>
 <div id="expenseStatus" class="small"></div>
@@ -355,6 +376,8 @@ body.group-open .fixedWorkspace{flex:0 0 auto}
   <h3>🔒 Cierre del grupo</h3>
   <div id="closeStatusBox"></div>
   <div id="paymentsBox"></div>
+  <div id="paymentHistoryBox" class="paymentHistory"></div>
+  <input id="paymentReceiptFile" class="hidden" type="file" accept="image/*" capture="environment">
   <button id="closeGroupBtn" onclick="closeGroup()">Cerrar grupo</button>
   <button id="reopenGroupBtn" class="secondary hidden" onclick="reopenGroup()">Reabrir grupo</button>
 </div>
@@ -371,11 +394,20 @@ body.group-open .fixedWorkspace{flex:0 0 auto}
 </div>
 </section>
 </div>
+<div id="receiptModal" class="receiptModal hidden" onclick="if(event.target===this) closeReceiptModal()">
+  <div class="receiptModalBox">
+    <div id="receiptModalStatus" class="small">Cargando comprobante...</div>
+    <img id="receiptModalImage" class="hidden" alt="Comprobante">
+    <button class="gray" onclick="closeReceiptModal()">Cerrar</button>
+  </div>
+</div>
 
 <script>
 let group=null;
 let autoTimer=null;
 let editingExpenseId=null;
+let existingExpenseReceiptId=null;
+let pendingPaymentReceipt=null;
 
 function getServerUrl(){ return localStorage.getItem('gca_server_url') || ''; }
 
@@ -443,6 +475,43 @@ function uid(){ return Math.random().toString(36).slice(2,6).toUpperCase()+"-"+M
 function expenseId(){ return "G-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7); }
 function money(n){ return '$ '+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2}); }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function receiptId(){ return "R-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8); }
+function paymentId(){ return "P-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8); }
+async function fileToCompressedBase64(file){
+  if(!file)return null;
+  if(!String(file.type||'').startsWith('image/'))throw new Error('El comprobante debe ser una imagen.');
+  const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(new Error('No se pudo leer la imagen.'));r.readAsDataURL(file);});
+  const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(new Error('No se pudo abrir la imagen.'));i.src=dataUrl;});
+  const maxSide=1100; let w=img.width,h=img.height; const scale=Math.min(1,maxSide/Math.max(w,h));
+  w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
+  const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);
+  const compressed=canvas.toDataURL('image/jpeg',0.72);
+  return {mimeType:'image/jpeg',name:(file.name||'comprobante').replace(/\.[^.]+$/,'')+'.jpg',base64:compressed.split(',')[1]};
+}
+async function uploadReceipt(file,kind){
+  const converted=await fileToCompressedBase64(file);if(!converted)return null;
+  const id=receiptId();
+  await api('saveReceipt',{receipt:{id,groupId:group.id,kind:kind||'general',mimeType:converted.mimeType,name:converted.name,dataBase64:converted.base64,createdAt:new Date().toISOString()}});
+  return id;
+}
+async function deleteReceiptSafe(id){if(!id)return;try{await api('deleteReceipt',{id});}catch(e){console.warn(e);}}
+async function viewReceipt(id){
+  if(!id)return;receiptModal.classList.remove('hidden');receiptModalStatus.textContent='Cargando comprobante...';receiptModalImage.classList.add('hidden');receiptModalImage.removeAttribute('src');
+  try{const data=await api('getReceipt',{id});receiptModalImage.src='data:'+(data.receipt.mimeType||'image/jpeg')+';base64,'+data.receipt.dataBase64;receiptModalImage.classList.remove('hidden');receiptModalStatus.textContent=data.receipt.name||'Comprobante';}
+  catch(e){receiptModalStatus.textContent='No se pudo abrir el comprobante: '+e.message;}
+}
+function closeReceiptModal(){receiptModal.classList.add('hidden');receiptModalImage.removeAttribute('src');}
+function renderExpenseReceiptPreview(){
+  const box=document.getElementById('expenseReceiptPreview');if(!box)return;
+  const file=expenseReceiptFile.files&&expenseReceiptFile.files[0];
+  if(file)box.innerHTML='✅ Nueva imagen seleccionada: '+escapeHtml(file.name);
+  else if(existingExpenseReceiptId&&existingExpenseReceiptId!=='__REMOVE__')box.innerHTML='<button type="button" class="receiptBtn" onclick="viewReceipt(\''+existingExpenseReceiptId+'\')">👁 Ver comprobante actual</button><button type="button" class="danger" onclick="removeCurrentExpenseReceipt()">Quitar comprobante</button>';
+  else if(existingExpenseReceiptId==='__REMOVE__')box.innerHTML='<span style="color:#b91c1c">El comprobante se quitará al guardar.</span>';
+  else box.innerHTML='<span>Podés sacar una foto o elegirla de la galería.</span>';
+}
+function removeCurrentExpenseReceipt(){if(!existingExpenseReceiptId||existingExpenseReceiptId==='__REMOVE__')return;if(!confirm('¿Quitar el comprobante de este gasto?'))return;existingExpenseReceiptId='__REMOVE__';expenseReceiptFile.value='';renderExpenseReceiptPreview();}
+
 
 async function api(action,payload){
   const url=getServerUrl();
@@ -632,7 +701,7 @@ function renderNextStep(){
   if(!box || !group)return;
   normalizeGroupState();
   const transfers=buildTransfers();
-  const pending=transfers.filter(t=>!isPaymentDone(t.from,t.to));
+  const pending=transfers;
   let icon='🧭', title='Siguiente paso:', text='', state='step-info';
   if(group.participants.length<2){
     text='Agregá al menos dos participantes.';
@@ -661,7 +730,7 @@ function render(){
   payer.innerHTML='<option value="">-- Elegir quién pagó --</option>'+group.participants.map(p=>'<option>'+escapeHtml(p)+'</option>').join('');
   if(payerAnterior && group.participants.includes(payerAnterior)) payer.value=payerAnterior;
   if(window.shareLink) shareLink.textContent=getShareUrl();
-  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><div class="expenseTop"><b class="expensePayer">'+escapeHtml(e.payer)+'</b><b class="expenseAmount">'+money(e.amount)+'</b></div><div class="expenseConcept">'+escapeHtml(e.concept||'Sin concepto')+'</div><div class="expenseActions"><button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button></div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
+  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><div class="expenseTop"><b class="expensePayer">'+escapeHtml(e.payer)+'</b><b class="expenseAmount">'+money(e.amount)+'</b></div><div class="expenseConcept">'+escapeHtml(e.concept||'Sin concepto')+'</div><div class="expenseActions">'+(e.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+e.receiptId+'\')">📷 Ver</button>':'')+'<button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button></div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
   renderResults();
   renderCloseSection();
 }
@@ -724,6 +793,9 @@ async function addExpense(){
     if(!amt || amt<=0){alert('Cargá un importe válido.');return}
 
     expenseStatus.innerHTML='<span style="color:#475569">Guardando...</span>';
+    const selectedReceipt=expenseReceiptFile.files&&expenseReceiptFile.files[0];
+    let newReceiptId=null;
+    if(selectedReceipt){expenseStatus.innerHTML='<span style="color:#475569">Subiendo comprobante...</span>';newReceiptId=await uploadReceipt(selectedReceipt,'expense');}
 
     if(editingExpenseId){
       const expense=group.expenses.find(e=>e.id===editingExpenseId);
@@ -731,6 +803,8 @@ async function addExpense(){
       expense.payer=payerName;
       expense.amount=amt;
       expense.concept=conc;
+      if(newReceiptId){const oldReceipt=expense.receiptId;expense.receiptId=newReceiptId;if(oldReceipt)await deleteReceiptSafe(oldReceipt);}
+      else if(existingExpenseReceiptId==='__REMOVE__'){const oldReceipt=expense.receiptId;delete expense.receiptId;if(oldReceipt)await deleteReceiptSafe(oldReceipt);}
       expense.updatedAt=new Date().toISOString();
     }else{
       group.expenses.push({
@@ -738,6 +812,7 @@ async function addExpense(){
         payer:payerName,
         amount:amt,
         concept:conc,
+        receiptId:newReceiptId||null,
         createdAt:new Date().toISOString()
       });
     }
@@ -762,6 +837,7 @@ function editExpense(id){
   payer.value=expense.payer;
   amount.value=expense.amount;
   concept.value=expense.concept||'';
+  existingExpenseReceiptId=expense.receiptId||null;expenseReceiptFile.value='';renderExpenseReceiptPreview();
   expenseFormTitle.textContent='Editar gasto';
   saveExpenseBtn.textContent='Guardar cambios';
   cancelEditBtn.classList.remove('hidden');
@@ -779,6 +855,7 @@ function resetExpenseForm(){
   payer.value='';
   amount.value='';
   concept.value='';
+  expenseReceiptFile.value='';existingExpenseReceiptId=null;renderExpenseReceiptPreview();
   expenseFormTitle.textContent='Cargar gasto';
   saveExpenseBtn.textContent='Guardar gasto';
   cancelEditBtn.classList.add('hidden');
@@ -793,6 +870,7 @@ async function deleteExpense(id){
   try{
     group.expenses=group.expenses.filter(e=>e.id!==id);
     await saveGroup();
+    if(expense.receiptId)await deleteReceiptSafe(expense.receiptId);
     if(editingExpenseId===id) resetExpenseForm();
     render();
     expenseStatus.innerHTML='<span style="color:#15803d">✅ Gasto eliminado correctamente.</span>';
@@ -817,36 +895,32 @@ function renderResults(){
     const pay=Math.min(debtors[i].amount,creditors[j].amount);
     if(pay>0.01){
       const from=debtors[i].p, to=creditors[j].p;
-      lines.push({text:from+' debe '+money(pay)+' a '+to, done:isPaymentDone(from,to)});
+      lines.push({text:from+' debe '+money(pay)+' a '+to, done:false});
     }
     debtors[i].amount-=pay; creditors[j].amount-=pay;
     if(debtors[i].amount<=0.01)i++; if(creditors[j].amount<=0.01)j++;
   }
-  resultsBox.innerHTML=lines.length?lines.map(l=>'<div class="resultLine '+(l.done?'resultDone':'resultPending')+'">'+escapeHtml(l.text)+'</div>').join(''):'<div class="resultLine resultDone">Todos están saldados.</div>';
+  resultsBox.innerHTML=lines.length?lines.map(l=>'<div class="resultLine resultPending">'+escapeHtml(l.text)+'</div>').join(''):'<div class="resultLine resultDone">Todos están saldados.</div>';
 }
 
 function normalizeGroupState(){
   if(!group)return;
   if(!group.status) group.status='open';
   if(!Array.isArray(group.payments)) group.payments=[];
+  group.payments=group.payments.filter(p=>p&&p.from&&p.to&&Number(p.amount||0)>0);
 }
 
 function calculateBalances(){
   const total=(group.expenses||[]).reduce((a,e)=>a+Number(e.amount||0),0);
   const per=group.participants.length?total/group.participants.length:0;
-  const paid={}; const balance={};
+  const paid={};const balance={};
   group.participants.forEach(p=>{paid[p]=0;balance[p]=0;});
-  (group.expenses||[]).forEach(e=>{ if(paid[e.payer]!==undefined) paid[e.payer]+=Number(e.amount||0); });
-  group.participants.forEach(p=>{ balance[p]=paid[p]-per; });
+  (group.expenses||[]).forEach(e=>{if(paid[e.payer]!==undefined)paid[e.payer]+=Number(e.amount||0);});
+  group.participants.forEach(p=>{balance[p]=paid[p]-per;});
+  (group.payments||[]).forEach(p=>{const a=Number(p.amount||0);if(balance[p.from]!==undefined)balance[p.from]+=a;if(balance[p.to]!==undefined)balance[p.to]-=a;});
   return {total,per,paid,balance};
 }
 
-function paymentKey(from,to){ return String(from)+'|||'+String(to); }
-function isPaymentDone(from,to){
-  normalizeGroupState();
-  const key=paymentKey(from,to);
-  return group.payments.some(p=>p.key===key && p.done);
-}
 
 function buildTransfers(){
   const calc=calculateBalances();
@@ -864,64 +938,36 @@ function buildTransfers(){
 }
 
 function renderCloseSection(){
-  if(!group || !window.closeStatusBox)return;
-  normalizeGroupState();
-  const calc=calculateBalances();
-  const transfers=buildTransfers();
-  const pending=transfers.filter(t=>!isPaymentDone(t.from,t.to));
-  const allSettled=transfers.length===0 || pending.length===0;
+  if(!group||!window.closeStatusBox)return;normalizeGroupState();
+  const transfers=buildTransfers();const allSettled=transfers.length===0;
   const label=group.status==='open'?'Grupo abierto':(allSettled?'Grupo cerrado y saldado':'Grupo cerrado con deudas pendientes');
   const cls=group.status==='open'?'closedBanner':('closedBanner '+(allSettled?'settled':'pending'));
   closeStatusBox.innerHTML='<div class="'+cls+'"><b>'+label+'</b></div>';
-
-  if(!transfers.length){
-    paymentsBox.innerHTML='<div class="resultLine">Todos están saldados.</div>';
-  }else{
-    paymentsBox.innerHTML='<h4>Pagos entre participantes</h4>'+transfers.map(t=>{
-      const done=isPaymentDone(t.from,t.to);
-      return '<div class="paymentRow"><div><b>'+escapeHtml(t.from)+'</b> debe '+money(t.amount)+' a <b>'+escapeHtml(t.to)+'</b><br><span class="small">'+(done?'✅ Pago registrado':'⏳ Pendiente')+'</span></div>'+
-        (group.status==='open'?'':'<button class="'+(done?'gray':'secondary')+'" onclick="togglePayment(\''+String(t.from).replace(/'/g,"\\'")+'\',\''+String(t.to).replace(/'/g,"\\'")+'\')">'+(done?'Marcar pendiente':'Marcar pagado')+'</button>')+'</div>';
-    }).join('');
-  }
-
-  closeGroupBtn.classList.toggle('hidden',group.status!=='open');
-  reopenGroupBtn.classList.toggle('hidden',group.status==='open');
-  const disabled=group.status!=='open';
-  ['newParticipant','addParticipantToggle','payer','amount','concept','saveExpenseBtn','cancelEditBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled;});
+  if(!transfers.length)paymentsBox.innerHTML='<div class="resultLine resultDone">✅ Todos están saldados.</div>';
+  else paymentsBox.innerHTML='<h4>Pagos pendientes</h4>'+transfers.map(t=>{const f=String(t.from).replace(/'/g,"\\'");const to=String(t.to).replace(/'/g,"\\'");const actions=group.status==='closed'?'<div class="transferActions"><button class="secondary" onclick="registerFullPayment(\''+f+'\',\''+to+'\','+Number(t.amount)+')">✅ Pago completo</button><button onclick="registerPartialPayment(\''+f+'\',\''+to+'\','+Number(t.amount)+')">➗ Pago parcial</button><button class="receiptBtn" onclick="registerPaymentWithReceipt(\''+f+'\',\''+to+'\','+Number(t.amount)+')">📷 Pago + comprobante</button></div>':'<div class="small">Cerrá el grupo para registrar pagos.</div>';return '<div class="paymentRow"><div><b>'+escapeHtml(t.from)+'</b> debe '+money(t.amount)+' a <b>'+escapeHtml(t.to)+'</b>'+actions+'</div></div>';}).join('');
+  renderPaymentHistory();
+  closeGroupBtn.classList.toggle('hidden',group.status!=='open');reopenGroupBtn.classList.toggle('hidden',group.status==='open');
+  const disabled=group.status!=='open';['newParticipant','addParticipantToggle','payer','amount','concept','expenseReceiptFile','saveExpenseBtn','cancelEditBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled;});
 }
-
-async function closeGroup(){
-  if(!group || group.status!=='open')return;
-  if(!group.expenses.length){alert('No hay gastos para cerrar.');return;}
-  if(!confirm('¿Cerrar este grupo? Después se podrá reabrir.'))return;
-  try{
-    group.status='closed';
-    group.closedAt=new Date().toISOString();
-    await saveGroup();
-    render();
-  }catch(e){alert(e.message);}
+function renderPaymentHistory(){
+  if(!window.paymentHistoryBox)return;const rows=(group.payments||[]).slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  if(!rows.length){paymentHistoryBox.innerHTML='';return;}
+  paymentHistoryBox.innerHTML='<h4>Historial de pagos</h4>'+rows.map(p=>'<div class="paymentHistoryItem"><b>'+escapeHtml(p.from)+'</b> pagó '+money(p.amount)+' a <b>'+escapeHtml(p.to)+'</b><div class="small">'+escapeHtml(formatLastActivity(p.createdAt))+'</div><div class="paymentHistoryActions">'+(p.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+p.receiptId+'\')">📷 Ver comprobante</button>':'')+'<button class="danger" onclick="deletePayment(\''+p.id+'\')">🗑 Anular pago</button></div></div>').join('');
 }
-
-async function reopenGroup(){
-  if(!group || group.status==='open')return;
-  if(!confirm('¿Reabrir el grupo para volver a modificar gastos o participantes?'))return;
-  try{
-    group.status='open';
-    group.reopenedAt=new Date().toISOString();
-    await saveGroup();
-    render();
-  }catch(e){alert(e.message);}
+async function createPayment(from,to,amount,receiptFile){
+  amount=Number(amount);if(!amount||amount<=0)throw new Error('El importe del pago no es válido.');
+  const current=buildTransfers().find(t=>t.from===from&&t.to===to);if(!current)throw new Error('Esa deuda ya no está pendiente.');if(amount>current.amount+0.01)throw new Error('El pago supera la deuda pendiente.');
+  let rid=null;if(receiptFile)rid=await uploadReceipt(receiptFile,'payment');
+  group.payments.push({id:paymentId(),from,to,amount,receiptId:rid||null,createdAt:new Date().toISOString()});
+  try{await saveGroup();render();}catch(e){if(rid)await deleteReceiptSafe(rid);throw e;}
 }
-
-async function togglePayment(from,to){
-  if(!group || group.status==='open')return;
-  normalizeGroupState();
-  const key=paymentKey(from,to);
-  const existing=group.payments.find(p=>p.key===key);
-  if(existing){existing.done=!existing.done; existing.updatedAt=new Date().toISOString();}
-  else{group.payments.push({key,from,to,done:true,updatedAt:new Date().toISOString()});}
-  try{await saveGroup();render();}catch(e){alert(e.message);}
-}
+async function registerFullPayment(from,to,amount){if(!confirm(from+' pagó '+money(amount)+' a '+to+'?'))return;try{await createPayment(from,to,amount,null);}catch(e){alert(e.message);}}
+async function registerPartialPayment(from,to,maxAmount){const raw=prompt('Importe pagado por '+from+' a '+to+':',String(Math.round(maxAmount*100)/100));if(raw===null)return;const amount=Number(String(raw).replace(',','.'));if(!amount||amount<=0){alert('Ingresá un importe válido.');return;}try{await createPayment(from,to,amount,null);}catch(e){alert(e.message);}}
+function registerPaymentWithReceipt(from,to,maxAmount){const raw=prompt('Importe pagado por '+from+' a '+to+':',String(Math.round(maxAmount*100)/100));if(raw===null)return;const amount=Number(String(raw).replace(',','.'));if(!amount||amount<=0){alert('Ingresá un importe válido.');return;}pendingPaymentReceipt={from,to,amount};paymentReceiptFile.value='';paymentReceiptFile.click();}
+async function onPaymentReceiptSelected(){const file=paymentReceiptFile.files&&paymentReceiptFile.files[0];const pending=pendingPaymentReceipt;pendingPaymentReceipt=null;if(!file||!pending)return;try{await createPayment(pending.from,pending.to,pending.amount,file);}catch(e){alert(e.message);}finally{paymentReceiptFile.value='';}}
+async function deletePayment(id){const payment=(group.payments||[]).find(p=>p.id===id);if(!payment)return;if(!confirm('¿Anular este pago registrado?\n\n'+payment.from+' → '+payment.to+' · '+money(payment.amount)))return;try{group.payments=group.payments.filter(p=>p.id!==id);await saveGroup();if(payment.receiptId)await deleteReceiptSafe(payment.receiptId);render();}catch(e){alert(e.message);}}
+async function closeGroup(){if(!group||group.status!=='open')return;if(!group.expenses.length){alert('No hay gastos para cerrar.');return;}if(!confirm('¿Cerrar este grupo para comenzar a registrar los pagos? Después se podrá reabrir.'))return;try{group.status='closed';group.closedAt=new Date().toISOString();await saveGroup();render();}catch(e){alert(e.message);}}
+async function reopenGroup(){if(!group||group.status==='open')return;if((group.payments||[]).length){alert('Para reabrir y modificar los gastos, primero anulá los pagos registrados.');return;}if(!confirm('¿Reabrir el grupo para volver a modificar gastos o participantes?'))return;try{group.status='open';group.reopenedAt=new Date().toISOString();await saveGroup();render();}catch(e){alert(e.message);}}
 
 function toggleAdvanced(){advancedShare.classList.toggle('hidden');}
 
@@ -1007,9 +1053,12 @@ document.addEventListener('visibilitychange',()=>{
 });
 
 window.addEventListener('beforeunload',stopAutoRefresh);
+expenseReceiptFile.addEventListener('change',renderExpenseReceiptPreview);
+paymentReceiptFile.addEventListener('change',onPaymentReceiptSelected);
 
 window.addEventListener('load',async()=>{
   enableReservedAccess();
+  renderExpenseReceiptPreview();
   updateConnectionBadge();
   renderMyGroups();
   await syncMyGroupsFromServer();
