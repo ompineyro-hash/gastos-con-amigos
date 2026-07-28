@@ -930,7 +930,7 @@ function buildTransfers(){
   const rows=[]; let i=0,j=0;
   while(i<debtors.length&&j<creditors.length){
     const pay=Math.min(debtors[i].amount,creditors[j].amount);
-    if(pay>0.01) rows.push({from:debtors[i].p,to:creditors[j].p,amount:pay,key:paymentKey(debtors[i].p,creditors[j].p)});
+    if(pay>0.01) rows.push({from:debtors[i].p,to:creditors[j].p,amount:pay});
     debtors[i].amount-=pay; creditors[j].amount-=pay;
     if(debtors[i].amount<=0.01)i++; if(creditors[j].amount<=0.01)j++;
   }
