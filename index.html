@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V8.0 PAGOS Y COMPROBANTES</title>
+<title>Gastos con Amigos V9.2 FINAL</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -246,6 +246,56 @@ body.group-open .fixedWorkspace{flex:0 0 auto}
 .receiptModalBox{background:white;border-radius:12px;max-width:95vw;max-height:95vh;padding:10px;overflow:auto;text-align:center}
 .receiptModalBox img{max-width:88vw;max-height:78vh;display:block;margin:auto}
 @media(max-width:760px){.transferActions,.paymentHistoryActions{display:block}.transferActions button,.paymentHistoryActions button{width:100%;margin-top:5px}}
+
+
+/* V9 FINAL: un solo scroll general del navegador (PC y celular) */
+body.group-open{overflow-y:auto!important;overflow-x:hidden!important}
+body.group-open .wrap{height:auto!important;overflow:visible!important;display:block!important}
+body.group-open #groupView{height:auto!important;display:block!important;min-height:0!important}
+body.group-open .fixedWorkspace{display:block!important}
+.variableScroll{flex:none!important;min-height:0!important;overflow:visible!important;padding-right:0!important;margin-top:7px!important}
+.variableScroll .expensesScroll,.expensesScroll{max-height:none!important;overflow:visible!important;padding-right:0!important}
+.participantsCompact #participantsList{max-height:none!important;overflow:visible!important;padding-right:0!important}
+.balanceTable{width:100%;border-collapse:collapse;margin-top:7px;font-size:13px}
+.balanceTable th,.balanceTable td{padding:7px;border-bottom:1px solid #e2e8f0;text-align:right}
+.balanceTable th:first-child,.balanceTable td:first-child{text-align:left}
+.balanceOk{color:#15803d;font-weight:bold}.balanceDebt{color:#b91c1c;font-weight:bold}.balanceCredit{color:#2563eb;font-weight:bold}
+@media(max-width:760px){.balanceTable{font-size:12px}.balanceTable th,.balanceTable td{padding:5px}}
+
+
+/* V9.2 FINAL: resultado a todo el ancho */
+#resultsBox{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  overflow-x:auto;
+}
+#resultsBox>.small{
+  display:block;
+  width:100%;
+  margin:0 0 7px;
+}
+#resultsBox .balanceTable{
+  display:table;
+  width:100%!important;
+  max-width:none!important;
+  table-layout:fixed;
+  margin:0;
+}
+#resultsBox .balanceTable th:nth-child(1),#resultsBox .balanceTable td:nth-child(1){width:17%;}
+#resultsBox .balanceTable th:nth-child(2),#resultsBox .balanceTable td:nth-child(2){width:14%;}
+#resultsBox .balanceTable th:nth-child(3),#resultsBox .balanceTable td:nth-child(3){width:18%;}
+#resultsBox .balanceTable th:nth-child(4),#resultsBox .balanceTable td:nth-child(4){width:15%;}
+#resultsBox .balanceTable th:nth-child(5),#resultsBox .balanceTable td:nth-child(5){width:13%;}
+#resultsBox .balanceTable th:nth-child(6),#resultsBox .balanceTable td:nth-child(6){width:23%;}
+#resultsBox .balanceTable th,#resultsBox .balanceTable td{
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+@media(max-width:760px){
+  #resultsBox .balanceTable{min-width:650px;table-layout:auto;}
+  #resultsBox .balanceTable th,#resultsBox .balanceTable td{white-space:nowrap;}
+}
 
 </style>
 </head>
@@ -700,8 +750,7 @@ function renderNextStep(){
   const box=document.getElementById('nextStepBox');
   if(!box || !group)return;
   normalizeGroupState();
-  const transfers=buildTransfers();
-  const pending=transfers;
+  const pending=getPendingTransfers();
   let icon='🧭', title='Siguiente paso:', text='', state='step-info';
   if(group.participants.length<2){
     text='Agregá al menos dos participantes.';
@@ -720,17 +769,19 @@ function renderNextStep(){
 
 function render(){
   if(!group)return;
+  normalizeGroupState();
   const payerAnterior = payer ? payer.value : '';
   title.textContent=group.name;
   groupCode.textContent='Código: '+group.id;
   groupMiniSummary.textContent='👥 '+group.participants.length+' participantes · 💰 '+group.expenses.length+' gastos · 🕒 '+formatLastActivity(group.updatedAt);
   if(window.simpleGroupCode) simpleGroupCode.textContent=group.id;
-  participantsList.innerHTML=group.participants.map(p=>'<span class="person">'+escapeHtml(p)+' <button title="Quitar participante" onclick="removeParticipant(\''+String(p).replace(/'/g,"\\'")+'\')">×</button></span>').join('');
+  const canEdit=group.status==='open';
+  participantsList.innerHTML=group.participants.map(p=>'<span class="person">'+escapeHtml(p)+(canEdit?' <button title="Quitar participante" onclick="removeParticipant(\''+String(p).replace(/'/g,"\\'")+'\')">×</button>':'')+'</span>').join('');
   renderNextStep();
   payer.innerHTML='<option value="">-- Elegir quién pagó --</option>'+group.participants.map(p=>'<option>'+escapeHtml(p)+'</option>').join('');
   if(payerAnterior && group.participants.includes(payerAnterior)) payer.value=payerAnterior;
   if(window.shareLink) shareLink.textContent=getShareUrl();
-  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><div class="expenseTop"><b class="expensePayer">'+escapeHtml(e.payer)+'</b><b class="expenseAmount">'+money(e.amount)+'</b></div><div class="expenseConcept">'+escapeHtml(e.concept||'Sin concepto')+'</div><div class="expenseActions">'+(e.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+e.receiptId+'\')">📷 Ver</button>':'')+'<button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button></div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
+  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><div class="expenseTop"><b class="expensePayer">'+escapeHtml(e.payer)+'</b><b class="expenseAmount">'+money(e.amount)+'</b></div><div class="expenseConcept">'+escapeHtml(e.concept||'Sin concepto')+'</div><div class="expenseActions">'+(e.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+e.receiptId+'\')">📷 Ver</button>':'')+(canEdit?'<button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button>':'<span class="small">🔒 Gasto cerrado</span>')+'</div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
   renderResults();
   renderCloseSection();
 }
@@ -878,96 +929,136 @@ async function deleteExpense(id){
     alert(e.message);
   }
 }
-function renderResults(){
-  if(!group || !group.expenses.length){
-    summaryBox.innerHTML='<div class="small">Todavía no hay gastos para calcular.</div>'; resultsBox.innerHTML=''; return;
-  }
-  const total=group.expenses.reduce((a,e)=>a+Number(e.amount||0),0);
-  const per=total/group.participants.length;
-  summaryBox.innerHTML='<div class="resultLine">Total gastado: '+money(total)+' · Participantes: '+group.participants.length+' · Promedio: '+money(per)+'</div>';
-  const balance={}; group.participants.forEach(p=>balance[p]=0);
-  group.expenses.forEach(e=>{ balance[e.payer]+=Number(e.amount); const share=Number(e.amount)/group.participants.length; group.participants.forEach(p=>balance[p]-=share); });
-  const debtors=[], creditors=[];
-  Object.entries(balance).forEach(([p,v])=>{ if(v<-0.01)debtors.push({p,amount:-v}); if(v>0.01)creditors.push({p,amount:v}); });
-  debtors.sort((a,b)=>b.amount-a.amount); creditors.sort((a,b)=>b.amount-a.amount);
-  const lines=[]; let i=0,j=0;
-  while(i<debtors.length && j<creditors.length){
-    const pay=Math.min(debtors[i].amount,creditors[j].amount);
-    if(pay>0.01){
-      const from=debtors[i].p, to=creditors[j].p;
-      lines.push({text:from+' debe '+money(pay)+' a '+to, done:false});
-    }
-    debtors[i].amount-=pay; creditors[j].amount-=pay;
-    if(debtors[i].amount<=0.01)i++; if(creditors[j].amount<=0.01)j++;
-  }
-  resultsBox.innerHTML=lines.length?lines.map(l=>'<div class="resultLine resultPending">'+escapeHtml(l.text)+'</div>').join(''):'<div class="resultLine resultDone">Todos están saldados.</div>';
-}
-
-function normalizeGroupState(){
-  if(!group)return;
-  if(!group.status) group.status='open';
-  if(!Array.isArray(group.payments)) group.payments=[];
-  group.payments=group.payments.filter(p=>p&&p.from&&p.to&&Number(p.amount||0)>0);
-}
-
-function calculateBalances(){
+function calculateBaseBalances(){
   const total=(group.expenses||[]).reduce((a,e)=>a+Number(e.amount||0),0);
   const per=group.participants.length?total/group.participants.length:0;
-  const paid={};const balance={};
+  const paid={}; const balance={};
   group.participants.forEach(p=>{paid[p]=0;balance[p]=0;});
-  (group.expenses||[]).forEach(e=>{if(paid[e.payer]!==undefined)paid[e.payer]+=Number(e.amount||0);});
+  (group.expenses||[]).forEach(e=>{if(paid[e.payer]!==undefined) paid[e.payer]+=Number(e.amount||0);});
   group.participants.forEach(p=>{balance[p]=paid[p]-per;});
-  (group.payments||[]).forEach(p=>{const a=Number(p.amount||0);if(balance[p.from]!==undefined)balance[p.from]+=a;if(balance[p.to]!==undefined)balance[p.to]-=a;});
   return {total,per,paid,balance};
 }
 
-
-function buildTransfers(){
-  const calc=calculateBalances();
+function transfersFromBalance(balance){
   const debtors=[],creditors=[];
-  Object.entries(calc.balance).forEach(([p,v])=>{if(v<-0.01)debtors.push({p,amount:-v});if(v>0.01)creditors.push({p,amount:v});});
-  debtors.sort((a,b)=>b.amount-a.amount); creditors.sort((a,b)=>b.amount-a.amount);
-  const rows=[]; let i=0,j=0;
+  Object.entries(balance).forEach(([p,v])=>{if(v<-0.01)debtors.push({p,amount:-v});if(v>0.01)creditors.push({p,amount:v});});
+  debtors.sort((a,b)=>b.amount-a.amount);creditors.sort((a,b)=>b.amount-a.amount);
+  const rows=[];let i=0,j=0,n=1;
   while(i<debtors.length&&j<creditors.length){
-    const pay=Math.min(debtors[i].amount,creditors[j].amount);
-    if(pay>0.01) rows.push({from:debtors[i].p,to:creditors[j].p,amount:pay});
-    debtors[i].amount-=pay; creditors[j].amount-=pay;
-    if(debtors[i].amount<=0.01)i++; if(creditors[j].amount<=0.01)j++;
+    const amount=Math.min(debtors[i].amount,creditors[j].amount);
+    if(amount>0.01) rows.push({id:'T'+n++,from:debtors[i].p,to:creditors[j].p,amount:Number(amount.toFixed(2))});
+    debtors[i].amount-=amount;creditors[j].amount-=amount;
+    if(debtors[i].amount<=0.01)i++;if(creditors[j].amount<=0.01)j++;
   }
   return rows;
 }
 
+function normalizeGroupState(){
+  if(!group)return;
+  if(!group.status)group.status='open';
+  if(!Array.isArray(group.payments))group.payments=[];
+  group.payments=group.payments.filter(p=>p&&p.from&&p.to&&Number(p.amount||0)>0);
+  if(group.status==='closed'&&!Array.isArray(group.settlementTransfers)){
+    group.settlementTransfers=transfersFromBalance(calculateBaseBalances().balance);
+  }
+}
+
+function getSettlementTransfers(){
+  normalizeGroupState();
+  if(group.status==='closed')return group.settlementTransfers||[];
+  return transfersFromBalance(calculateBaseBalances().balance);
+}
+
+function paidForTransfer(t){
+  return (group.payments||[]).filter(p=>(p.transferId&&p.transferId===t.id)||(!p.transferId&&p.from===t.from&&p.to===t.to)).reduce((a,p)=>a+Number(p.amount||0),0);
+}
+
+function getPendingTransfers(){
+  return getSettlementTransfers().map(t=>({...t,paid:paidForTransfer(t),pending:Number(Math.max(0,t.amount-paidForTransfer(t)).toFixed(2))})).filter(t=>t.pending>0.01);
+}
+
+function renderResults(){
+  if(!group||!group.expenses.length){summaryBox.innerHTML='<div class="small">Todavía no hay gastos para calcular.</div>';resultsBox.innerHTML='';return;}
+  const calc=calculateBaseBalances();
+  summaryBox.innerHTML='<div class="resultLine">Total gastado: '+money(calc.total)+' · Participantes: '+group.participants.length+' · Parte de cada uno: '+money(calc.per)+'</div>';
+  const pendingByPerson={};const receivedByPerson={};
+  group.participants.forEach(p=>{pendingByPerson[p]=0;receivedByPerson[p]=0;});
+  getPendingTransfers().forEach(t=>{pendingByPerson[t.from]+=t.pending;receivedByPerson[t.to]+=t.pending;});
+  const rows=group.participants.map(p=>{
+    const paidDebts=(group.payments||[]).filter(x=>x.from===p).reduce((a,x)=>a+Number(x.amount||0),0);
+    const collected=(group.payments||[]).filter(x=>x.to===p).reduce((a,x)=>a+Number(x.amount||0),0);
+    const pending=pendingByPerson[p]||0;const receivable=receivedByPerson[p]||0;
+    let state='<span class="balanceOk">Equilibrado</span>';
+    if(pending>0.01)state='<span class="balanceDebt">Debe '+money(pending)+'</span>';
+    else if(receivable>0.01)state='<span class="balanceCredit">Recibe '+money(receivable)+'</span>';
+    return '<tr><td><b>'+escapeHtml(p)+'</b></td><td>'+money(calc.paid[p])+'</td><td>'+money(calc.per)+'</td><td>'+money(paidDebts)+'</td><td>'+money(collected)+'</td><td>'+state+'</td></tr>';
+  }).join('');
+  resultsBox.innerHTML='<div class="small"><b>Gastos y pagos se controlan por separado.</b> Los pagos no cambian los gastos originales.</div><table class="balanceTable"><thead><tr><th>Persona</th><th>Aportó</th><th>Le correspondía</th><th>Pagó deudas</th><th>Cobró</th><th>Estado</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
 function renderCloseSection(){
   if(!group||!window.closeStatusBox)return;normalizeGroupState();
-  const transfers=buildTransfers();const allSettled=transfers.length===0;
-  const label=group.status==='open'?'Grupo abierto':(allSettled?'Grupo cerrado y saldado':'Grupo cerrado con deudas pendientes');
+  const pending=getPendingTransfers();const allSettled=pending.length===0;
+  const label=group.status==='open'?'Grupo abierto':(allSettled?'Grupo cerrado y saldado':'Grupo cerrado con pagos pendientes');
   const cls=group.status==='open'?'closedBanner':('closedBanner '+(allSettled?'settled':'pending'));
   closeStatusBox.innerHTML='<div class="'+cls+'"><b>'+label+'</b></div>';
-  if(!transfers.length)paymentsBox.innerHTML='<div class="resultLine resultDone">✅ Todos están saldados.</div>';
-  else paymentsBox.innerHTML='<h4>Pagos pendientes</h4>'+transfers.map(t=>{const f=String(t.from).replace(/'/g,"\\'");const to=String(t.to).replace(/'/g,"\\'");const actions=group.status==='closed'?'<div class="transferActions"><button class="secondary" onclick="registerFullPayment(\''+f+'\',\''+to+'\','+Number(t.amount)+')">✅ Pago completo</button><button onclick="registerPartialPayment(\''+f+'\',\''+to+'\','+Number(t.amount)+')">➗ Pago parcial</button><button class="receiptBtn" onclick="registerPaymentWithReceipt(\''+f+'\',\''+to+'\','+Number(t.amount)+')">📷 Pago + comprobante</button></div>':'<div class="small">Cerrá el grupo para registrar pagos.</div>';return '<div class="paymentRow"><div><b>'+escapeHtml(t.from)+'</b> debe '+money(t.amount)+' a <b>'+escapeHtml(t.to)+'</b>'+actions+'</div></div>';}).join('');
+  if(group.status==='open'){
+    const proposal=getSettlementTransfers();
+    paymentsBox.innerHTML=proposal.length?'<h4>Deudas calculadas</h4>'+proposal.map(t=>'<div class="paymentRow"><div><b>'+escapeHtml(t.from)+'</b> debe '+money(t.amount)+' a <b>'+escapeHtml(t.to)+'</b><br><span class="small">Cerrá el grupo para comenzar a registrar pagos.</span></div></div>').join(''):'<div class="resultLine resultDone">Todos están equilibrados.</div>';
+  }else if(!pending.length){
+    paymentsBox.innerHTML='<div class="resultLine resultDone">✅ Todos cubrieron su parte. El balance general está en cero.</div>';
+  }else{
+    paymentsBox.innerHTML='<h4>Pagos pendientes</h4>'+pending.map(t=>{const id=String(t.id).replace(/'/g,"\\'");return '<div class="paymentRow"><div><b>'+escapeHtml(t.from)+'</b> debe '+money(t.pending)+' a <b>'+escapeHtml(t.to)+'</b><br><span class="small">Deuda original: '+money(t.amount)+' · Pagado: '+money(t.paid)+'</span><div class="transferActions"><button class="secondary" onclick="registerFullPayment(\''+id+'\')">✅ Pago completo</button><button onclick="registerPartialPayment(\''+id+'\')">➗ Pago parcial</button><button class="receiptBtn" onclick="registerPaymentWithReceipt(\''+id+'\')">📷 Pago + comprobante</button></div></div></div>';}).join('');
+  }
   renderPaymentHistory();
   closeGroupBtn.classList.toggle('hidden',group.status!=='open');reopenGroupBtn.classList.toggle('hidden',group.status==='open');
   const disabled=group.status!=='open';['newParticipant','addParticipantToggle','payer','amount','concept','expenseReceiptFile','saveExpenseBtn','cancelEditBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled;});
 }
+
 function renderPaymentHistory(){
   if(!window.paymentHistoryBox)return;const rows=(group.payments||[]).slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
   if(!rows.length){paymentHistoryBox.innerHTML='';return;}
   paymentHistoryBox.innerHTML='<h4>Historial de pagos</h4>'+rows.map(p=>'<div class="paymentHistoryItem"><b>'+escapeHtml(p.from)+'</b> pagó '+money(p.amount)+' a <b>'+escapeHtml(p.to)+'</b><div class="small">'+escapeHtml(formatLastActivity(p.createdAt))+'</div><div class="paymentHistoryActions">'+(p.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+p.receiptId+'\')">📷 Ver comprobante</button>':'')+'<button class="danger" onclick="deletePayment(\''+p.id+'\')">🗑 Anular pago</button></div></div>').join('');
 }
-async function createPayment(from,to,amount,receiptFile){
-  amount=Number(amount);if(!amount||amount<=0)throw new Error('El importe del pago no es válido.');
-  const current=buildTransfers().find(t=>t.from===from&&t.to===to);if(!current)throw new Error('Esa deuda ya no está pendiente.');if(amount>current.amount+0.01)throw new Error('El pago supera la deuda pendiente.');
+
+async function createPayment(transferId,amount,receiptFile){
+  normalizeGroupState();const transfer=(group.settlementTransfers||[]).find(t=>t.id===transferId);if(!transfer)throw new Error('No se encontró esa deuda.');
+  const pending=getPendingTransfers().find(t=>t.id===transferId);if(!pending)throw new Error('Esa deuda ya está saldada.');
+  amount=Number(amount);if(!amount||amount<=0)throw new Error('El importe del pago no es válido.');if(amount>pending.pending+0.01)throw new Error('El pago supera la deuda pendiente.');
   let rid=null;if(receiptFile)rid=await uploadReceipt(receiptFile,'payment');
-  group.payments.push({id:paymentId(),from,to,amount,receiptId:rid||null,createdAt:new Date().toISOString()});
+  group.payments.push({id:paymentId(),transferId,from:transfer.from,to:transfer.to,amount:Number(amount.toFixed(2)),receiptId:rid||null,createdAt:new Date().toISOString()});
   try{await saveGroup();render();}catch(e){if(rid)await deleteReceiptSafe(rid);throw e;}
 }
-async function registerFullPayment(from,to,amount){if(!confirm(from+' pagó '+money(amount)+' a '+to+'?'))return;try{await createPayment(from,to,amount,null);}catch(e){alert(e.message);}}
-async function registerPartialPayment(from,to,maxAmount){const raw=prompt('Importe pagado por '+from+' a '+to+':',String(Math.round(maxAmount*100)/100));if(raw===null)return;const amount=Number(String(raw).replace(',','.'));if(!amount||amount<=0){alert('Ingresá un importe válido.');return;}try{await createPayment(from,to,amount,null);}catch(e){alert(e.message);}}
-function registerPaymentWithReceipt(from,to,maxAmount){const raw=prompt('Importe pagado por '+from+' a '+to+':',String(Math.round(maxAmount*100)/100));if(raw===null)return;const amount=Number(String(raw).replace(',','.'));if(!amount||amount<=0){alert('Ingresá un importe válido.');return;}pendingPaymentReceipt={from,to,amount};paymentReceiptFile.value='';paymentReceiptFile.click();}
-async function onPaymentReceiptSelected(){const file=paymentReceiptFile.files&&paymentReceiptFile.files[0];const pending=pendingPaymentReceipt;pendingPaymentReceipt=null;if(!file||!pending)return;try{await createPayment(pending.from,pending.to,pending.amount,file);}catch(e){alert(e.message);}finally{paymentReceiptFile.value='';}}
+
+async function registerFullPayment(transferId){
+  const t=getPendingTransfers().find(x=>x.id===transferId);if(!t)return;
+  if(!confirm(t.from+' pagó '+money(t.pending)+' a '+t.to+'?'))return;
+  try{await createPayment(transferId,t.pending,null);}catch(e){alert(e.message);}
+}
+async function registerPartialPayment(transferId){
+  const t=getPendingTransfers().find(x=>x.id===transferId);if(!t)return;
+  const raw=prompt('Importe pagado por '+t.from+' a '+t.to+':',String(t.pending).replace('.',','));if(raw===null)return;
+  const amount=Number(String(raw).replace(',','.'));if(!amount||amount<=0){alert('Ingresá un importe válido.');return;}
+  try{await createPayment(transferId,amount,null);}catch(e){alert(e.message);}
+}
+function registerPaymentWithReceipt(transferId){
+  const t=getPendingTransfers().find(x=>x.id===transferId);if(!t)return;
+  const raw=prompt('Importe pagado por '+t.from+' a '+t.to+':',String(t.pending).replace('.',','));if(raw===null)return;
+  const amount=Number(String(raw).replace(',','.'));if(!amount||amount<=0){alert('Ingresá un importe válido.');return;}
+  pendingPaymentReceipt={transferId,amount};paymentReceiptFile.value='';paymentReceiptFile.click();
+}
+async function onPaymentReceiptSelected(){const file=paymentReceiptFile.files&&paymentReceiptFile.files[0];const pending=pendingPaymentReceipt;pendingPaymentReceipt=null;if(!file||!pending)return;try{await createPayment(pending.transferId,pending.amount,file);}catch(e){alert(e.message);}finally{paymentReceiptFile.value='';}}
 async function deletePayment(id){const payment=(group.payments||[]).find(p=>p.id===id);if(!payment)return;if(!confirm('¿Anular este pago registrado?\n\n'+payment.from+' → '+payment.to+' · '+money(payment.amount)))return;try{group.payments=group.payments.filter(p=>p.id!==id);await saveGroup();if(payment.receiptId)await deleteReceiptSafe(payment.receiptId);render();}catch(e){alert(e.message);}}
-async function closeGroup(){if(!group||group.status!=='open')return;if(!group.expenses.length){alert('No hay gastos para cerrar.');return;}if(!confirm('¿Cerrar este grupo para comenzar a registrar los pagos? Después se podrá reabrir.'))return;try{group.status='closed';group.closedAt=new Date().toISOString();await saveGroup();render();}catch(e){alert(e.message);}}
-async function reopenGroup(){if(!group||group.status==='open')return;if((group.payments||[]).length){alert('Para reabrir y modificar los gastos, primero anulá los pagos registrados.');return;}if(!confirm('¿Reabrir el grupo para volver a modificar gastos o participantes?'))return;try{group.status='open';group.reopenedAt=new Date().toISOString();await saveGroup();render();}catch(e){alert(e.message);}}
+async function closeGroup(){
+  if(!group||group.status!=='open')return;if(!group.expenses.length){alert('No hay gastos para cerrar.');return;}
+  if(!confirm('¿Cerrar los gastos y comenzar el período de pagos? Los gastos quedarán fijos.'))return;
+  try{group.status='closed';group.closedAt=new Date().toISOString();group.payments=[];group.settlementTransfers=transfersFromBalance(calculateBaseBalances().balance);await saveGroup();render();}catch(e){alert(e.message);}
+}
+async function reopenGroup(){
+  if(!group||group.status==='open')return;if((group.payments||[]).length){alert('Para reabrir los gastos, primero anulá los pagos registrados.');return;}
+  if(!confirm('¿Reabrir el grupo para modificar gastos o participantes? Se recalcularán las deudas al volver a cerrarlo.'))return;
+  try{group.status='open';delete group.settlementTransfers;group.reopenedAt=new Date().toISOString();await saveGroup();render();}catch(e){alert(e.message);}
+}
 
 function toggleAdvanced(){advancedShare.classList.toggle('hidden');}
 
