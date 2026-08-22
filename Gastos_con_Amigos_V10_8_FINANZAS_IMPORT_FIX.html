@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gastos con Amigos V10.8 – Finanzas Import FIX</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
+header{background:#0f766e;color:white;padding:14px;text-align:center}
+h1{margin:0;font-size:23px}
+.wrap{max-width:900px;margin:auto;padding:12px}
+.card{background:white;border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 3px 12px #0001}
+button{border:0;border-radius:9px;padding:10px 12px;background:#0f766e;color:white;font-weight:bold;cursor:pointer;margin:3px}
+button.secondary{background:#2563eb}
+button.gray{background:#64748b}
+input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:9px;margin:5px 0;font-size:16px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+.row>*{flex:1}
+.badge{display:inline-block;padding:5px 9px;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;font-weight:bold}
+.hidden{display:none!important}
+.person{display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border-radius:999px;padding:7px 10px;margin:4px}
+.expense{border-left:5px solid #0f766e;background:#f8fafc;border-radius:10px;padding:9px;margin:8px 0}
+.resultLine{background:#f0fdf4;border-left:5px solid #16a34a;padding:10px;border-radius:10px;margin:7px 0;font-weight:bold}
+.linkbox{background:#f8fafc;border:1px dashed #94a3b8;border-radius:10px;padding:10px;word-break:break-all}
+.notice{background:#fff7ed;border-left:5px solid #f97316;border-radius:10px;padding:10px;margin:8px 0}
+.ok{background:#f0fdf4;border-left-color:#16a34a}
+.small{font-size:13px;color:#64748b}
+.topline{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.status{font-size:13px;padding:7px 9px;border-radius:9px;background:#eef6ff;color:#1f4f8b}
+.groupItem{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:11px;margin:8px 0}
+.groupInfo{min-width:0}.groupInfo b{display:block;font-size:17px}.groupInfo .small{margin-top:3px}
+.emptyGroups{padding:14px;text-align:center;background:#f8fafc;border-radius:12px;color:#64748b}
+.groupActions{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.groupActions button{margin:0;padding:8px 10px}
+.danger{background:#b91c1c}
+.sectionTitle{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.techToggle{background:#475569}
+.welcome{background:#eff6ff;border-left:5px solid #2563eb;border-radius:10px;padding:12px;margin:10px 0}
+.person button{padding:2px 6px;margin:0;background:#b91c1c;border-radius:999px;font-size:11px}
+.closeCard{border:2px solid #0f766e}
+.memberSummary{background:#f8fafc;border-radius:10px;padding:10px;margin:7px 0}
+.memberSummary b{display:block;margin-bottom:4px}
+.closedBanner{background:#eff6ff;border-left:5px solid #2563eb;border-radius:10px;padding:11px;margin:10px 0}
+.pending{background:#fff7ed;border-left-color:#f97316}
+.settled{background:#f0fdf4;border-left-color:#16a34a}
+.paymentRow{display:flex;gap:8px;align-items:center;justify-content:space-between;background:#f8fafc;border-radius:10px;padding:9px;margin:7px 0}
+.paymentRow button{margin:0;padding:7px 9px}
+@media(max-width:650px){.paymentRow{display:block}.paymentRow button{width:100%;margin-top:7px}}
+@media(max-width:650px){.row{display:block}button{width:100%;margin:4px 0}.topline{display:block}.groupItem{display:block}.groupItem button{margin-top:9px}.groupActions{display:block}.groupActions button{width:100%}}
+
+/* V6.1 UX: participantes cerca y compactos */
+.groupHeaderCard{padding:12px 14px 10px}
+.backBtn{padding:7px 10px;margin-bottom:6px}
+.groupTopline h2{margin:4px 0 2px}
+.groupMeta{margin-top:4px}
+.groupMiniSummary{margin-top:5px}
+.participantsCompact{margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0}
+.participantsHead h3{margin:0 0 5px;font-size:17px}
+.participantsCompact .person{padding:5px 8px;margin:2px;font-size:14px}
+.participantsCompact .person button{font-size:10px;padding:1px 5px}
+.addParticipantCompact{display:flex;gap:6px;align-items:center;margin-top:6px}
+.addParticipantCompact input{margin:0;padding:8px;min-width:0}
+.addParticipantCompact button{margin:0;padding:8px 10px;white-space:nowrap;flex:0 0 auto}
+.expenseCard{margin-top:8px}
+.expenseCard h3,.shareCard h3{margin:0 0 8px}
+.compactNotice{margin:6px 0;padding:8px}
+.shareActions{display:flex;gap:6px;flex-wrap:wrap}
+.shareActions button{margin:0}
+@media(max-width:650px){
+  .addParticipantCompact{display:flex}
+  .addParticipantCompact input{width:auto;flex:1}
+  .addParticipantCompact button{width:auto}
+  .shareActions{display:block}
+  .shareActions button{width:100%;margin:4px 0}
+}
+
+/* V6.2 COMPACTA: datos fijos juntos y movimientos con scroll */
+header{padding:7px 10px}
+header h1{font-size:20px;line-height:1.05}
+header .small{font-size:11px;line-height:1.1}
+.wrap{padding:7px 10px}
+.card{padding:10px 12px;margin:7px 0;border-radius:12px}
+h2,h3{margin-top:4px;margin-bottom:7px}
+.fixedWorkspace{display:grid;grid-template-columns:1fr 1.12fr;gap:8px;align-items:start}
+.fixedWorkspace>.card{margin:0;height:100%}
+.groupHeaderCard{padding:9px 11px}
+.backBtn{padding:5px 8px;margin:0 0 4px;font-size:12px}
+.groupTopline{gap:4px}
+.groupTopline h2{font-size:21px;margin:1px 0}
+.status{font-size:12px;padding:5px 7px}
+.badge{padding:4px 7px;font-size:11px}
+.groupMiniSummary{font-size:12px;margin-top:3px}
+.participantsCompact{margin-top:6px;padding-top:5px}
+.participantsHead h3{font-size:15px;margin:0 0 3px}
+.participantsCompact .person{padding:3px 6px;margin:1px;font-size:13px}
+.addParticipantCompact{margin-top:4px;gap:4px}
+.addParticipantCompact input{padding:6px 8px;font-size:14px;height:32px}
+.addParticipantCompact button{padding:6px 8px;font-size:12px;height:32px}
+.expenseCard{padding:9px 11px}
+.expenseCard h3{font-size:17px;margin:0 0 4px}
+.compactNotice{font-size:12px;padding:5px 7px;margin:4px 0}
+.expenseCard label{font-size:13px}
+.expenseCard input,.expenseCard select{padding:7px 8px;margin:3px 0;font-size:14px;height:34px}
+.expenseCard button{padding:7px 9px;font-size:13px}
+.expensesCard{padding:9px 11px}
+.expensesCard h3{margin:0 0 5px;font-size:17px}
+.expensesScroll{max-height:210px;overflow-y:auto;padding-right:4px;scrollbar-gutter:stable}
+.expensesScroll .expense{padding:7px;margin:5px 0}
+.expensesScroll .expense button{padding:6px 8px;font-size:12px}
+.resultLine{padding:7px 8px;margin:5px 0}
+.memberSummary{padding:7px 8px;margin:5px 0}
+.closedBanner{padding:7px 8px;margin:6px 0}
+.paymentRow{padding:7px 8px;margin:5px 0}
+.closeCard,.shareCard{padding:9px 11px}
+.closeCard h3,.shareCard h3{margin:0 0 6px}
+@media(max-width:760px){
+  .fixedWorkspace{display:block}
+  .fixedWorkspace>.card{margin:7px 0;height:auto}
+  .expensesScroll{max-height:260px}
+}
+
+
+/* V6.3 SCROLL: zona fija arriba y todo lo variable desplazable abajo */
+body.group-open{overflow:hidden}
+body.group-open .wrap{height:calc(100vh - 48px);overflow:hidden;display:block}
+body.group-open #groupView{height:100%;display:flex;flex-direction:column;min-height:0}
+body.group-open .fixedWorkspace{flex:0 0 auto}
+.variableScroll{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:4px;margin-top:7px;scrollbar-gutter:stable}
+.variableScroll>.card:first-child{margin-top:0}
+.variableScroll>.card:last-child{margin-bottom:4px}
+.variableScroll .expensesScroll{max-height:none;overflow:visible;padding-right:0}
+@media(max-width:760px){
+  body.group-open .wrap{height:calc(100vh - 48px)}
+  .variableScroll{margin-top:4px;padding-right:2px}
+}
+
+/* V6.4: movimientos en dos columnas para aprovechar el ancho */
+#expensesList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+#expensesList .expense{margin:0;min-width:0;height:100%;display:flex;flex-direction:column}
+#expensesList .expense>div{margin-top:auto!important;padding-top:5px}
+#expensesList .expense button{margin:2px 2px 0 0}
+@media(max-width:760px){
+  #expensesList{grid-template-columns:1fr}
+}
+
+/* V6.5 PULIDA: misma lógica, mejor lectura y menos altura */
+.expenseCard .row{display:grid;grid-template-columns:1.15fr .85fr;gap:7px}
+.expenseCard #concept{margin-bottom:4px}
+#saveExpenseBtn{min-width:145px}
+#expensesList .expense{padding:8px 9px;border-left-width:4px}
+.expenseTop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.expensePayer{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.expenseAmount{font-size:16px;color:#0f766e;white-space:nowrap}
+.expenseConcept{font-size:13px;color:#475569;margin-top:3px;line-height:1.25;min-height:16px;overflow-wrap:anywhere}
+.expenseActions{display:flex;justify-content:flex-end;gap:4px;margin-top:auto;padding-top:6px}
+.expenseActions button{padding:5px 7px!important;font-size:11px!important}
+.variableScroll>.card:not(.expensesCard){padding:8px 10px}
+.variableScroll>.card:not(.expensesCard) h3{font-size:16px;margin:0 0 5px}
+#summaryBox .resultLine{font-size:13px}
+#resultsBox{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#resultsBox .resultLine{margin:0;font-size:13px}
+#memberSummaryBox{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+#memberSummaryBox .memberSummary{margin:0}
+.shareCard .notice{margin-bottom:6px}
+@media(max-width:760px){
+  .expenseCard .row{grid-template-columns:1fr}
+  #resultsBox,#memberSummaryBox{grid-template-columns:1fr}
+  #saveExpenseBtn{width:100%}
+}
+
+
+/* V6.6 GUIADA: ayuda clara, participantes y cierre compactos */
+.nextStepBox{background:#eff6ff;border-left:5px solid #2563eb;border-radius:10px;padding:7px 9px;margin:6px 0 0;display:flex;gap:8px;align-items:flex-start}
+.nextStepIcon{font-size:18px;line-height:1}
+.nextStepText{font-size:13px;line-height:1.3;color:#334155}
+.nextStepText b{display:block;color:#1e3a8a;margin-bottom:1px}
+.participantsCompact #participantsList{display:flex;flex-wrap:wrap;gap:3px;max-height:58px;overflow-y:auto;padding-right:2px}
+.participantsCompact .person{margin:0}
+.addParticipantToggle{background:#2563eb;padding:5px 8px!important;font-size:12px!important;margin:4px 0 0!important}
+.addParticipantCompact.hiddenForm{display:none}
+.addParticipantCompact{animation:openForm .15s ease-out}
+@keyframes openForm{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+#expensesList .expense{min-height:78px}
+.expenseActions{padding-top:3px}
+.expenseActions button{padding:4px 6px!important}
+.memberSummary{display:flex;align-items:center;gap:5px;flex-wrap:wrap;font-size:12px;line-height:1.25}
+.memberSummary b{display:inline;margin:0;font-size:13px}
+.memberSummary .memberNumbers{color:#475569}
+.memberSummary .positive{color:#15803d;font-weight:bold}
+.memberSummary .negative{color:#b91c1c;font-weight:bold}
+#paymentsBox h4{margin:7px 0 4px}
+@media(max-width:760px){
+  .nextStepBox{padding:7px 8px}
+  .participantsCompact #participantsList{max-height:82px}
+  #expensesList .expense{min-height:auto}
+}
+
+/* V6.7 CIERRE SIMPLE: guía de una línea y terminación visual */
+.nextStepBox{padding:6px 8px;margin-top:5px;align-items:center;gap:6px;min-height:32px}
+.nextStepIcon{font-size:16px}
+.nextStepText{font-size:12.5px;line-height:1.2}
+.nextStepText b{display:inline;margin:0 5px 0 0}
+.nextStepBox.step-info{background:#eff6ff;border-left-color:#2563eb}
+.nextStepBox.step-info .nextStepText b{color:#1e3a8a}
+.nextStepBox.step-warn{background:#fffbeb;border-left-color:#f59e0b}
+.nextStepBox.step-warn .nextStepText b{color:#92400e}
+.nextStepBox.step-done{background:#f0fdf4;border-left-color:#16a34a}
+.nextStepBox.step-done .nextStepText b{color:#166534}
+.closeCard{border-width:1px}
+.closeCard .closedBanner{padding:6px 8px;margin:4px 0 6px}
+#memberSummaryBox{gap:4px}
+.memberSummary{padding:6px 7px}
+.paymentRow{padding:7px 8px}
+#closeGroupBtn,#reopenGroupBtn{padding:8px 11px}
+@media(max-width:760px){.nextStepText b{display:block;margin-bottom:1px}}
+
+/* V6.8: Resultado con estado por color y cierre sin datos repetidos */
+#resultsBox .resultPending{background:#fffbeb;border-left-color:#f59e0b;color:#78350f}
+#resultsBox .resultDone{background:#f0fdf4;border-left-color:#16a34a;color:#14532d}
+.closeCard #paymentsBox{margin-top:2px}
+
+/* V7.1 MÓVIL: un único scroll natural en celular; escritorio queda igual */
+@media(max-width:760px){
+  body.group-open{overflow-y:auto;overflow-x:hidden}
+  body.group-open .wrap{height:auto;overflow:visible;display:block}
+  body.group-open #groupView{height:auto;display:block;min-height:0}
+  body.group-open .fixedWorkspace{display:block}
+  .variableScroll{flex:none;min-height:0;overflow:visible;padding-right:0;margin-top:4px}
+  .variableScroll .expensesScroll{max-height:none;overflow:visible;padding-right:0}
+  .participantsCompact #participantsList{max-height:none;overflow:visible;padding-right:0}
+}
+
+
+/* V8.0: pagos reales y comprobantes */
+.receiptField{margin-top:6px;padding:8px;border:1px dashed #94a3b8;border-radius:10px;background:#f8fafc}
+.receiptField input[type=file]{padding:6px;background:white}
+.receiptPreview{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.receiptBtn{background:#7c3aed}
+.paymentHistory{margin-top:10px}
+.paymentHistoryItem{background:#f8fafc;border-left:4px solid #2563eb;border-radius:9px;padding:8px;margin:6px 0}
+.paymentHistoryActions,.transferActions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.paymentHistoryActions button,.transferActions button{padding:6px 8px;font-size:12px;margin:0}
+.receiptModal{position:fixed;inset:0;background:#000c;z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px}
+.receiptModal.hidden{display:none!important}
+.receiptModalBox{background:white;border-radius:12px;max-width:95vw;max-height:95vh;padding:10px;overflow:auto;text-align:center}
+.receiptModalBox img{max-width:88vw;max-height:78vh;display:block;margin:auto}
+@media(max-width:760px){.transferActions,.paymentHistoryActions{display:block}.transferActions button,.paymentHistoryActions button{width:100%;margin-top:5px}}
+
+
+/* V9 FINAL: un solo scroll general del navegador (PC y celular) */
+body.group-open{overflow-y:auto!important;overflow-x:hidden!important}
+body.group-open .wrap{height:auto!important;overflow:visible!important;display:block!important}
+body.group-open #groupView{height:auto!important;display:block!important;min-height:0!important}
+body.group-open .fixedWorkspace{display:block!important}
+.variableScroll{flex:none!important;min-height:0!important;overflow:visible!important;padding-right:0!important;margin-top:7px!important}
+.variableScroll .expensesScroll,.expensesScroll{max-height:none!important;overflow:visible!important;padding-right:0!important}
+.participantsCompact #participantsList{max-height:none!important;overflow:visible!important;padding-right:0!important}
+.balanceTable{width:100%;border-collapse:collapse;margin-top:7px;font-size:13px}
+.balanceTable th,.balanceTable td{padding:7px;border-bottom:1px solid #e2e8f0;text-align:right}
+.balanceTable th:first-child,.balanceTable td:first-child{text-align:left}
+.balanceOk{color:#15803d;font-weight:bold}.balanceDebt{color:#b91c1c;font-weight:bold}.balanceCredit{color:#2563eb;font-weight:bold}
+@media(max-width:760px){.balanceTable{font-size:12px}.balanceTable th,.balanceTable td{padding:5px}}
+
+
+/* V9.3: enlace simple con FinanzaSimple */
+.financeBtn{background:#7c3aed!important}
+.financeHint{font-size:12px;color:#5b21b6;margin-top:5px}
+
+/* V9.2 FINAL: resultado a todo el ancho */
+#resultsBox{
+  display:block!important;
+  width:100%!important;
+  max-width:none!important;
+  overflow-x:auto;
+}
+#resultsBox>.small{
+  display:block;
+  width:100%;
+  margin:0 0 7px;
+}
+#resultsBox .balanceTable{
+  display:table;
+  width:100%!important;
+  max-width:none!important;
+  table-layout:fixed;
+  margin:0;
+}
+#resultsBox .balanceTable th:nth-child(1),#resultsBox .balanceTable td:nth-child(1){width:17%;}
+#resultsBox .balanceTable th:nth-child(2),#resultsBox .balanceTable td:nth-child(2){width:14%;}
+#resultsBox .balanceTable th:nth-child(3),#resultsBox .balanceTable td:nth-child(3){width:18%;}
+#resultsBox .balanceTable th:nth-child(4),#resultsBox .balanceTable td:nth-child(4){width:15%;}
+#resultsBox .balanceTable th:nth-child(5),#resultsBox .balanceTable td:nth-child(5){width:13%;}
+#resultsBox .balanceTable th:nth-child(6),#resultsBox .balanceTable td:nth-child(6){width:23%;}
+#resultsBox .balanceTable th,#resultsBox .balanceTable td{
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+@media(max-width:760px){
+  #resultsBox .balanceTable{min-width:650px;table-layout:auto;}
+  #resultsBox .balanceTable th,#resultsBox .balanceTable td{white-space:nowrap;}
+}
+
+
+/* V10.2: grupos permanentes con varias actividades */
+.activitiesCard{border:2px solid #2563eb;background:#f8fbff}
+.activitiesHead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.activitiesList{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}
+.activityChip{background:white;color:#1e3a8a;border:1px solid #bfdbfe;padding:8px 10px;border-radius:10px;cursor:pointer;font-weight:bold}
+.activityChip.active{background:#2563eb;color:white;border-color:#2563eb}
+.activityChip.done{border-color:#16a34a}
+.activityMeta{font-size:11px;font-weight:normal;display:block;margin-top:2px;opacity:.85}
+.activityParticipants{margin-top:9px;padding-top:8px;border-top:1px solid #dbeafe}
+.activityChecks{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
+.activityChecks label{display:inline-flex;align-items:center;gap:5px;background:white;border:1px solid #dbeafe;border-radius:999px;padding:5px 8px;font-size:13px}
+.activityChecks input{width:auto;margin:0}
+@media(max-width:760px){.activitiesHead button{width:100%}.activitiesList{display:block}.activityChip{width:100%;margin:4px 0}.activityChecks{display:block}.activityChecks label{display:flex;margin:4px 0}}
+
+.activityTools{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.activityTools button{padding:7px 9px;font-size:12px;margin:0}
+.activityNameLine{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+@media(max-width:760px){.activityTools{display:block}.activityTools button{width:100%;margin:4px 0}}
+</style>
+</head>
+<body>
+<header>
+<h1>💸 Gastos con Amigos</h1>
+<div class="small" style="color:white">Grupos permanentes, actividades y pagos · V10.8</div>
+</header>
+
+<div class="wrap">
+
+
+
+<section id="home">
+<section class="card">
+<div class="sectionTitle">
+  <h2>Inicio</h2>
+</div>
+<div id="welcomeMessage" class="welcome">
+  <b>Bienvenido.</b><br>Elegí un grupo guardado o abrí una invitación.
+</div>
+
+<!-- Configuración reservada: se abre manteniendo presionado el título de la app -->
+<div id="technicalSetup" class="hidden">
+  <div class="notice"><b>Configuración reservada.</b></div>
+  <label>URL del servidor</label>
+  <input id="serverUrl" placeholder="https://script.google.com/macros/s/XXXXX/exec">
+  <button onclick="saveServerUrl()">Guardar conexión</button>
+  <button class="gray" onclick="testConnection()">Probar conexión</button>
+  <div id="serverStatus" class="small"></div>
+</div>
+</section>
+  <div class="card">
+    <div class="sectionTitle">
+      <h2>Mis grupos</h2>
+      <button onclick="showCreateGroup()">➕ Crear grupo nuevo</button>
+    </div>
+    <div id="myGroupsList"></div>
+  </div>
+
+  <div id="createGroupCard" class="card hidden">
+    <div class="sectionTitle">
+      <h2>Crear grupo nuevo</h2>
+      <div class="small">Disponible para quien administra la aplicación.</div>
+      <button class="gray" onclick="cancelCreateGroup()">Cancelar</button>
+    </div>
+    <label>Nombre del grupo</label>
+    <input id="groupName" placeholder="Ej: Asado sábado / Viaje Bariloche / Regalo de cumple">
+    <div class="row">
+      <div>
+        <label>Participantes iniciales</label>
+        <input id="participantsText" placeholder="Ej: Marcelo, Andrea, Juan">
+      </div>
+      <div><button onclick="createSharedGroup()">Crear grupo</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="topline">
+      <h3>Recuperar un grupo</h3>
+      <span class="status" id="connectionBadge">Sin conexión</span>
+    </div>
+    <div class="small">Usá esta opción cuando ya tengas el código del grupo.</div>
+    <label>Código del grupo</label>
+    <input id="joinCode" placeholder="Ej: ABCD-1234">
+    <button class="secondary" onclick="joinGroup()">Entrar</button>
+  </div>
+</section>
+
+<section id="groupView" class="hidden">
+<div class="card activitiesCard">
+  <div class="activitiesHead">
+    <div><h3 style="margin:0">Actividades</h3><div class="small">El grupo sigue activo; cada actividad tiene sus propios gastos y pagos.</div></div>
+    <button class="secondary" onclick="createActivity()">➕ Nueva actividad</button>
+  </div>
+  <div id="activitiesList" class="activitiesList"></div>
+  <div id="activityParticipantsBox" class="activityParticipants"></div>
+  <div class="activityTools">
+    <button class="gray" onclick="renameCurrentActivity()">✏️ Renombrar actividad</button>
+    <button class="danger" onclick="deleteCurrentActivity()">🗑 Eliminar actividad</button>
+  </div>
+</div>
+<div class="fixedWorkspace">
+<div class="card groupHeaderCard">
+<button class="gray backBtn" onclick="backHome()">← Volver</button>
+<div class="topline groupTopline">
+<h2 id="title"></h2>
+<span class="status" id="syncStatus">Sin verificar</span>
+</div>
+<div class="groupMeta"><span class="badge">Grupo compartido</span> <span id="groupCode" class="badge"></span></div>
+<div id="groupMiniSummary" class="small groupMiniSummary"></div>
+<div id="nextStepBox" class="nextStepBox"></div>
+
+<div class="participantsCompact">
+  <div class="participantsHead">
+    <h3>Participantes</h3>
+  </div>
+  <div id="participantsList"></div>
+  <button id="addParticipantToggle" class="addParticipantToggle" onclick="toggleParticipantForm()">＋ Agregar participante</button>
+  <div id="addParticipantForm" class="addParticipantCompact hiddenForm">
+    <input id="newParticipant" placeholder="Nombre del participante" onkeydown="if(event.key==='Enter') addParticipant()">
+    <button onclick="addParticipant()">Agregar</button>
+  </div>
+</div>
+</div>
+
+<div class="card expenseCard">
+<h3 id="expenseFormTitle">Cargar gasto</h3>
+<div class="notice ok compactNotice">La selección no cambia mientras cargás. La lista se actualiza después de guardar.</div>
+<div class="row">
+<div><label>Quién pagó</label><select id="payer"></select></div>
+<div><label>Importe</label><input id="amount" type="number" placeholder="Ej: 30000"></div>
+</div>
+<label>Concepto</label>
+<input id="concept" placeholder="Ej: carne, bebidas, hotel">
+<div class="receiptField">
+  <label>📷 Comprobante (opcional)</label>
+  <input id="expenseReceiptFile" type="file" accept="image/*" capture="environment">
+  <div id="expenseReceiptPreview" class="receiptPreview small"></div>
+</div>
+<button id="saveExpenseBtn" onclick="addExpense()">Guardar gasto</button>
+<button id="cancelEditBtn" class="gray hidden" onclick="cancelEditExpense()">Cancelar edición</button>
+<div id="expenseStatus" class="small"></div>
+</div>
+</div>
+
+<div class="variableScroll" id="variableScroll">
+<div class="card expensesCard">
+<h3>Gastos cargados</h3>
+<div id="expensesList" class="expensesScroll"></div>
+</div>
+
+<div class="card">
+<h3>📊 Resultado</h3>
+<div id="summaryBox"></div>
+<div id="resultsBox"></div>
+</div>
+
+<div class="card closeCard">
+  <h3>💳 Liquidación y pagos</h3>
+  <div id="closeStatusBox"></div>
+  <div id="paymentsBox"></div>
+  <div id="paymentHistoryBox" class="paymentHistory"></div>
+  <input id="paymentReceiptFile" class="hidden" type="file" accept="image/*" capture="environment">
+  <button id="closeGroupBtn" onclick="closeGroup()">Liquidar actividad</button>
+  <button id="reopenGroupBtn" class="secondary hidden" onclick="reopenGroup()">Reabrir actividad</button>
+</div>
+
+<div class="card shareCard">
+<h3>Compartir grupo</h3>
+<div class="notice ok compactNotice"><b>Invitación directa:</b> la otra persona toca el enlace y entra sin escribir códigos.</div>
+<div class="shareActions">
+<button class="secondary" onclick="shareInvite()">📤 Compartir invitación</button>
+<button class="secondary" onclick="copyInvite()">📋 Copiar invitación</button>
+<button class="gray" onclick="loadGroup(true)">Actualizar lista</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+<div id="receiptModal" class="receiptModal hidden" onclick="if(event.target===this) closeReceiptModal()">
+  <div class="receiptModalBox">
+    <div id="receiptModalStatus" class="small">Cargando comprobante...</div>
+    <img id="receiptModalImage" class="hidden" alt="Comprobante">
+    <button class="gray" onclick="closeReceiptModal()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+let group=null;
+let autoTimer=null;
+let editingExpenseId=null;
+let existingExpenseReceiptId=null;
+let pendingPaymentReceipt=null;
+let activeActivityId=null;
+let switchingActivity=false;
+let activitySelectionVersion=0;
+
+
+function activityId(){ return "A-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6); }
+function activityStorageKey(){ return group&&group.id?'gca_activity_'+group.id:''; }
+function saveLocalActivity(){ const k=activityStorageKey(); if(k&&activeActivityId)localStorage.setItem(k,activeActivityId); }
+function loadLocalActivity(){ const k=activityStorageKey(); return k?localStorage.getItem(k):null; }
+function ensureActivities(){
+  if(!group)return;
+  if(!Array.isArray(group.members)) group.members=Array.isArray(group.participants)?[...group.participants]:[];
+  if(!Array.isArray(group.activities) || !group.activities.length){
+    const first={id:activityId(),name:'Actividad inicial',participants:[...group.members],expenses:Array.isArray(group.expenses)?group.expenses:[],status:group.status||'open',payments:Array.isArray(group.payments)?group.payments:[],settlementTransfers:group.settlementTransfers||null,createdAt:group.createdAt||new Date().toISOString(),updatedAt:group.updatedAt||new Date().toISOString()};
+    group.activities=[first];
+  }
+  group.activities.forEach(a=>{
+    if(!Array.isArray(a.participants))a.participants=[...group.members];
+    if(!Array.isArray(a.expenses))a.expenses=[];
+    if(!Array.isArray(a.payments))a.payments=[];
+    if(!a.status)a.status='open';
+  });
+  const allNames=[];
+  [...(group.members||[]),...group.activities.flatMap(a=>a.participants||[])].forEach(n=>{if(n&&!allNames.includes(n))allNames.push(n);});
+  group.members=allNames;
+  const localChoice=loadLocalActivity();
+  if(!activeActivityId || !group.activities.some(a=>a.id===activeActivityId)) activeActivityId=(localChoice&&group.activities.some(a=>a.id===localChoice))?localChoice:group.activities[0].id;
+  saveLocalActivity();
+  applyActiveActivity();
+}
+function getActiveActivity(){ return group&&Array.isArray(group.activities)?group.activities.find(a=>a.id===activeActivityId):null; }
+function applyActiveActivity(){
+  const a=getActiveActivity();if(!a)return;
+  group.participants=a.participants;group.expenses=a.expenses;group.status=a.status;group.payments=a.payments;
+  if(a.settlementTransfers)group.settlementTransfers=a.settlementTransfers;else delete group.settlementTransfers;
+}
+function syncActiveActivity(){
+  const a=getActiveActivity();if(!a)return;
+  group.activeActivityId=activeActivityId;
+  a.participants=[...(group.participants||[])];a.expenses=group.expenses||[];a.status=group.status||'open';a.payments=group.payments||[];a.updatedAt=new Date().toISOString();
+  if(group.settlementTransfers)a.settlementTransfers=group.settlementTransfers;else delete a.settlementTransfers;
+  saveLocalActivity();
+}
+function renderActivities(){
+  if(!group||!window.activitiesList)return;ensureActivities();
+  activitiesList.innerHTML=group.activities.map(a=>{
+    const active=a.id===activeActivityId?' active':'';
+    const done=a.status==='closed'&&getActivityPending(a).length===0?' done':'';
+    const state=a.status==='open'?'Abierta':(getActivityPending(a).length?'Pagos pendientes':'Saldada');
+    return '<button type="button" class="activityChip'+active+done+'" data-activity-id="'+escapeHtml(a.id)+'">'+escapeHtml(a.name)+'<span class="activityMeta">'+state+' · '+a.expenses.length+' gastos</span></button>';
+  }).join('');
+  activitiesList.querySelectorAll('.activityChip').forEach(btn=>{
+    btn.addEventListener('click',()=>selectActivity(btn.dataset.activityId));
+  });
+  const a=getActiveActivity();
+  activityParticipantsBox.innerHTML='<b>Participan en esta actividad:</b><div class="activityChecks">'+group.members.map(m=>'<label><input type="checkbox" '+(a.participants.includes(m)?'checked':'')+' onchange="toggleActivityParticipant('+JSON.stringify(m).replace(/\"/g,'&quot;')+',this.checked)">'+escapeHtml(m)+'</label>').join('')+'</div>';
+}
+function getActivityPending(a){
+  if(!a||a.status!=='closed')return [];
+  const payments=a.payments||[];
+  return (a.settlementTransfers||[]).map(t=>{const paid=payments.filter(p=>(p.transferId&&p.transferId===t.id)||(!p.transferId&&p.from===t.from&&p.to===t.to)).reduce((x,p)=>x+Number(p.amount||0),0);return {...t,pending:Math.max(0,t.amount-paid)};}).filter(t=>t.pending>0.01);
+}
+function selectActivity(id){
+  if(!group||!id)return;
+  const target=(group.activities||[]).find(a=>String(a.id)===String(id));
+  if(!target)return;
+  if(String(activeActivityId)===String(target.id))return;
+
+  switchingActivity=true;
+  try{
+    // Guardar la actividad que se está viendo antes de pasar a otra.
+    const current=(group.activities||[]).find(a=>String(a.id)===String(activeActivityId));
+    if(current){
+      current.participants=[...(group.participants||[])];
+      current.expenses=Array.isArray(group.expenses)?group.expenses:[];
+      current.status=group.status||'open';
+      current.payments=Array.isArray(group.payments)?group.payments:[];
+      current.updatedAt=new Date().toISOString();
+      if(group.settlementTransfers)current.settlementTransfers=group.settlementTransfers;
+      else delete current.settlementTransfers;
+    }
+
+    activeActivityId=target.id;
+    activitySelectionVersion++;
+    saveLocalActivity();
+    applyActiveActivity();
+    resetExpenseForm();
+    render();
+  } finally {
+    setTimeout(()=>{switchingActivity=false;},150);
+  }
+}
+async function createActivity(){
+  if(!group)return;const name=prompt('Nombre de la nueva actividad:','');if(name===null)return;const clean=name.trim();if(!clean){alert('Escribí un nombre.');return;}
+  syncActiveActivity();const a={id:activityId(),name:clean,participants:[...group.members],expenses:[],status:'open',payments:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+  group.activities.push(a);activeActivityId=a.id;saveLocalActivity();applyActiveActivity();await saveGroup();render();
+}
+async function renameCurrentActivity(){
+  const a=getActiveActivity();if(!a)return;
+  const next=prompt('Nuevo nombre de la actividad:',a.name||'');if(next===null)return;
+  const clean=next.trim();if(!clean){alert('El nombre no puede quedar vacío.');return;}
+  a.name=clean;a.updatedAt=new Date().toISOString();
+  try{await saveGroup();render();}catch(e){alert(e.message);}
+}
+async function deleteCurrentActivity(){
+  const a=getActiveActivity();if(!a)return;
+  if(group.activities.length<=1){alert('El grupo debe conservar al menos una actividad.');return;}
+  if((a.expenses||[]).length||(a.payments||[]).length){alert('Solo se puede eliminar una actividad sin gastos ni pagos.');return;}
+  if(!confirm('¿Eliminar la actividad "'+a.name+'"?'))return;
+  group.activities=group.activities.filter(x=>x.id!==a.id);
+  activeActivityId=group.activities[0].id;saveLocalActivity();applyActiveActivity();
+  try{await saveGroup();render();}catch(e){alert(e.message);}
+}
+async function toggleActivityParticipant(name,checked){
+  const a=getActiveActivity();if(!a||a.status!=='open'){alert('La actividad está liquidada. Reabrila para cambiar participantes.');renderActivities();return;}
+  if(!checked && a.expenses.some(e=>e.payer===name)){alert('No se puede quitar porque tiene gastos cargados en esta actividad.');renderActivities();return;}
+  if(checked&&!a.participants.includes(name))a.participants.push(name);
+  if(!checked)a.participants=a.participants.filter(x=>x!==name);
+  if(a.participants.length<2){alert('La actividad debe tener al menos 2 participantes.');if(!a.participants.includes(name))a.participants.push(name);renderActivities();return;}
+  applyActiveActivity();await saveGroup();render();
+}
+
+function getServerUrl(){ return localStorage.getItem('gca_server_url') || ''; }
+
+let adminPressTimer=null;
+function openReservedSetup(){
+  if(!window.technicalSetup)return;
+  technicalSetup.classList.toggle('hidden');
+  if(!technicalSetup.classList.contains('hidden') && window.serverUrl){
+    serverUrl.value=getServerUrl();
+    technicalSetup.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+}
+function enableReservedAccess(){
+  const headerTitle=document.querySelector('header h1');
+  if(!headerTitle)return;
+  const start=()=>{ adminPressTimer=setTimeout(openReservedSetup,3000); };
+  const stop=()=>{ clearTimeout(adminPressTimer); adminPressTimer=null; };
+  headerTitle.addEventListener('mousedown',start);
+  headerTitle.addEventListener('mouseup',stop);
+  headerTitle.addEventListener('mouseleave',stop);
+  headerTitle.addEventListener('touchstart',start,{passive:true});
+  headerTitle.addEventListener('touchend',stop);
+  headerTitle.addEventListener('touchcancel',stop);
+}
+
+function cleanUrl(url){
+  url=String(url||'').trim();
+  const i=url.indexOf('https://script.google.com/macros/s/');
+  if(i>0) url=url.slice(i);
+  return url;
+}
+function toggleTechnicalSetup(){
+  technicalSetup.classList.toggle('hidden');
+  if(!technicalSetup.classList.contains('hidden')){ serverUrl.value=getServerUrl(); }
+}
+function saveServerUrl(){
+  const url=cleanUrl(serverUrl.value);
+  if(!url){alert('Pegá la URL del servidor.');return}
+  if(!url.includes('/macros/s/') || !url.endsWith('/exec')){
+    alert('La URL parece incompleta. Tiene que terminar en /exec.');
+    return;
+  }
+  localStorage.setItem('gca_server_url',url);
+  updateConnectionBadge();
+}
+function updateConnectionBadge(){
+  const ok=!!getServerUrl();
+  connectionBadge.textContent=ok?'Conectado':'Esperando invitación';
+  serverStatus.innerHTML=ok?'Conexión guardada.':'';
+  serverUrl.value=getServerUrl();
+  if(window.welcomeMessage){
+    welcomeMessage.innerHTML=ok
+      ? '<b>Aplicación lista.</b><br>Elegí un grupo guardado, creá uno nuevo o abrí una invitación.'
+      : '<b>Bienvenido.</b><br>Abrí la invitación que te enviaron para comenzar.';
+  }
+}
+async function testConnection(){
+  try{
+    const r=await fetch(getServerUrl()+'?t='+Date.now());
+    const data=await r.json();
+    serverStatus.innerHTML=data.ok?'<span style="color:#15803d">Servidor responde bien: '+escapeHtml(data.app||'OK')+'</span>':'Servidor respondió pero no OK';
+  }catch(e){ serverStatus.innerHTML='<span style="color:#dc2626">No se pudo conectar: '+escapeHtml(e.message)+'</span>'; }
+}
+function uid(){ return Math.random().toString(36).slice(2,6).toUpperCase()+"-"+Math.floor(1000+Math.random()*9000); }
+function expenseId(){ return "G-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7); }
+function money(n){ return '$ '+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function receiptId(){ return "R-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8); }
+function paymentId(){ return "P-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8); }
+async function fileToCompressedBase64(file){
+  if(!file)return null;
+  if(!String(file.type||'').startsWith('image/'))throw new Error('El comprobante debe ser una imagen.');
+  const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(new Error('No se pudo leer la imagen.'));r.readAsDataURL(file);});
+  const img=await new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(new Error('No se pudo abrir la imagen.'));i.src=dataUrl;});
+  const maxSide=1100; let w=img.width,h=img.height; const scale=Math.min(1,maxSide/Math.max(w,h));
+  w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
+  const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;canvas.getContext('2d').drawImage(img,0,0,w,h);
+  const compressed=canvas.toDataURL('image/jpeg',0.72);
+  return {mimeType:'image/jpeg',name:(file.name||'comprobante').replace(/\.[^.]+$/,'')+'.jpg',base64:compressed.split(',')[1]};
+}
+async function uploadReceipt(file,kind){
+  const converted=await fileToCompressedBase64(file);if(!converted)return null;
+  const id=receiptId();
+  await api('saveReceipt',{receipt:{id,groupId:group.id,activityId:activeActivityId||'',kind:kind||'general',mimeType:converted.mimeType,name:converted.name,dataBase64:converted.base64,createdAt:new Date().toISOString()}});
+  return id;
+}
+async function deleteReceiptSafe(id){if(!id)return;try{await api('deleteReceipt',{id});}catch(e){console.warn(e);}}
+async function viewReceipt(id){
+  if(!id)return;receiptModal.classList.remove('hidden');receiptModalStatus.textContent='Cargando comprobante...';receiptModalImage.classList.add('hidden');receiptModalImage.removeAttribute('src');
+  try{const data=await api('getReceipt',{id});receiptModalImage.src='data:'+(data.receipt.mimeType||'image/jpeg')+';base64,'+data.receipt.dataBase64;receiptModalImage.classList.remove('hidden');receiptModalStatus.textContent=data.receipt.name||'Comprobante';}
+  catch(e){receiptModalStatus.textContent='No se pudo abrir el comprobante: '+e.message;}
+}
+function closeReceiptModal(){receiptModal.classList.add('hidden');receiptModalImage.removeAttribute('src');}
+function renderExpenseReceiptPreview(){
+  const box=document.getElementById('expenseReceiptPreview');if(!box)return;
+  const file=expenseReceiptFile.files&&expenseReceiptFile.files[0];
+  if(file)box.innerHTML='✅ Nueva imagen seleccionada: '+escapeHtml(file.name);
+  else if(existingExpenseReceiptId&&existingExpenseReceiptId!=='__REMOVE__')box.innerHTML='<button type="button" class="receiptBtn" onclick="viewReceipt(\''+existingExpenseReceiptId+'\')">👁 Ver comprobante actual</button><button type="button" class="danger" onclick="removeCurrentExpenseReceipt()">Quitar comprobante</button>';
+  else if(existingExpenseReceiptId==='__REMOVE__')box.innerHTML='<span style="color:#b91c1c">El comprobante se quitará al guardar.</span>';
+  else box.innerHTML='<span>Podés sacar una foto o elegirla de la galería.</span>';
+}
+function removeCurrentExpenseReceipt(){if(!existingExpenseReceiptId||existingExpenseReceiptId==='__REMOVE__')return;if(!confirm('¿Quitar el comprobante de este gasto?'))return;existingExpenseReceiptId='__REMOVE__';expenseReceiptFile.value='';renderExpenseReceiptPreview();}
+
+
+async function api(action,payload){
+  const url=getServerUrl();
+  if(!url) throw new Error('Todavía no hay conexión. Abrí una invitación válida.');
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...(payload||{})})});
+  const txt=await r.text();
+  let data; try{data=JSON.parse(txt)}catch(e){throw new Error('El servidor no devolvió JSON: '+txt.slice(0,100))}
+  if(!data.ok) throw new Error(data.error || 'Error de servidor.');
+  return data;
+}
+
+function getMyGroups(){
+  try{
+    const data=JSON.parse(localStorage.getItem('gca_my_groups')||'[]');
+    return Array.isArray(data)?data:[];
+  }catch(e){ return []; }
+}
+function saveMyGroups(items){ localStorage.setItem('gca_my_groups',JSON.stringify(items)); }
+function getHiddenGroupIds(){
+  try{
+    const data=JSON.parse(localStorage.getItem('gca_hidden_groups')||'[]');
+    return Array.isArray(data)?data:[];
+  }catch(e){ return []; }
+}
+function saveHiddenGroupIds(items){ localStorage.setItem('gca_hidden_groups',JSON.stringify([...new Set(items)])); }
+function hideGroupId(id){ saveHiddenGroupIds([...getHiddenGroupIds(),id]); }
+function unhideGroupId(id){ saveHiddenGroupIds(getHiddenGroupIds().filter(x=>x!==id)); }
+
+async function syncMyGroupsFromServer(){
+  if(!getServerUrl())return;
+  try{
+    const data=await api('listGroups');
+    const serverGroups=Array.isArray(data.groups)?data.groups:[];
+    if(!serverGroups.length)return;
+
+    const localGroups=getMyGroups();
+    const byId={};
+    localGroups.forEach(item=>{ if(item && item.id) byId[item.id]=item; });
+
+    const hiddenIds=new Set(getHiddenGroupIds());
+    serverGroups.forEach(item=>{
+      if(!item || !item.id || hiddenIds.has(item.id))return;
+      const previous=byId[item.id]||{};
+      byId[item.id]={
+        id:item.id,
+        name:item.name||previous.name||'Grupo sin nombre',
+        participants:Array.isArray(item.members)?item.members:(Array.isArray(item.participants)?item.participants:(previous.participants||[])),members:Array.isArray(item.members)?item.members:(previous.members||[]),
+        updatedAt:item.updatedAt||previous.updatedAt||''
+      };
+    });
+
+    const merged=Object.values(byId).sort((a,b)=>new Date(b.updatedAt||0)-new Date(a.updatedAt||0));
+    saveMyGroups(merged.slice(0,100));
+    renderMyGroups();
+  }catch(e){
+    console.warn('No se pudo actualizar Mis grupos desde el servidor:',e);
+  }
+}
+function rememberGroup(g){
+  if(!g || !g.id)return;
+  unhideGroupId(g.id);
+  const items=getMyGroups().filter(x=>x.id!==g.id);
+  items.unshift({id:g.id,name:g.name||'Grupo sin nombre',participants:Array.isArray(g.members)?g.members:(Array.isArray(g.participants)?g.participants:[]),members:Array.isArray(g.members)?g.members:[],updatedAt:g.updatedAt||new Date().toISOString()});
+  saveMyGroups(items.slice(0,50));
+  renderMyGroups();
+}
+function formatLastActivity(value){
+  if(!value)return 'Sin actividad registrada';
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return 'Sin actividad registrada';
+  const now=new Date();
+  const sameDay=d.toDateString()===now.toDateString();
+  const yesterday=new Date(now); yesterday.setDate(now.getDate()-1);
+  if(sameDay)return 'Hoy '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  if(d.toDateString()===yesterday.toDateString())return 'Ayer '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('es-AR')+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+}
+function renderMyGroups(){
+  if(!window.myGroupsList)return;
+  const items=getMyGroups().sort((a,b)=>new Date(b.updatedAt||0)-new Date(a.updatedAt||0));
+  if(!items.length){ myGroupsList.innerHTML='<div class="emptyGroups">Todavía no hay grupos guardados en este dispositivo.</div>'; return; }
+  myGroupsList.innerHTML=items.map(item=>{
+    const people=(item.members||item.participants||[]).join(', ')||'Sin participantes';
+    return '<div class="groupItem"><div class="groupInfo"><b>'+escapeHtml(item.name)+'</b>'+ 
+      '<div class="small">👥 '+escapeHtml(people)+'</div>'+ 
+      '<div class="small">🕒 Última actividad: '+escapeHtml(formatLastActivity(item.updatedAt))+'</div></div>'+ 
+      '<div class="groupActions"><button class="secondary" onclick="openSavedGroup(\''+item.id+'\')">Abrir</button>'+ 
+      '<button onclick="renameSavedGroup(\''+item.id+'\')">✏️ Renombrar</button>'+ 
+      '<button class="danger" onclick="removeSavedGroup(\''+item.id+'\')">🗑 Quitar</button></div></div>';
+  }).join('');
+}
+async function renameSavedGroup(id){
+  const item=getMyGroups().find(x=>x.id===id);
+  if(!item)return;
+  const next=prompt('Nuevo nombre del grupo:',item.name||'');
+  if(next===null)return;
+  const clean=next.trim();
+  if(!clean){alert('El nombre no puede quedar vacío.');return;}
+  try{
+    const data=await api('getGroup',{id});
+    const g=data.group;
+    g.name=clean;
+    g.updatedAt=new Date().toISOString();
+    const saved=await api('saveGroup',{group:g});
+    rememberGroup(saved.group||g);
+    alert('Nombre actualizado.');
+  }catch(e){alert('No se pudo renombrar el grupo: '+e.message);}
+}
+function removeSavedGroup(id){
+  const item=getMyGroups().find(x=>x.id===id);
+  if(!item)return;
+  if(!confirm('¿Quitar "'+item.name+'" de este dispositivo?\n\nEl grupo seguirá existiendo y podrás recuperarlo con su enlace o código.'))return;
+  hideGroupId(id);
+  saveMyGroups(getMyGroups().filter(x=>x.id!==id));
+  renderMyGroups();
+}
+async function openSavedGroup(id){
+  try{ const data=await api('getGroup',{id}); openGroup(data.group); }
+  catch(e){ alert('No se pudo abrir el grupo: '+e.message); }
+}
+function showCreateGroup(){
+  groupName.value=''; participantsText.value=''; createGroupCard.classList.remove('hidden'); groupName.focus(); createGroupCard.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function cancelCreateGroup(){ groupName.value=''; participantsText.value=''; createGroupCard.classList.add('hidden'); }
+
+async function createSharedGroup(){
+  try{
+    if(!getServerUrl()){ alert('Esta instalación todavía no está preparada para crear grupos.'); return; }
+    const name=groupName.value.trim();
+    const participants=participantsText.value.split(',').map(x=>x.trim()).filter(Boolean);
+    if(!name){alert('Escribí el nombre del grupo.');return}
+    if(participants.length<2){alert('Cargá al menos 2 participantes separados por coma.');return}
+    const firstActivity={id:activityId(),name:'Actividad inicial',participants:[...participants],expenses:[],status:"open",payments:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    const newGroup={id:uid(),name,members:[...participants],participants:[...participants],activities:[firstActivity],expenses:firstActivity.expenses,status:firstActivity.status,payments:firstActivity.payments,createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
+    const data=await api('saveGroup',{group:newGroup});
+    openGroup(data.group || newGroup);
+  }catch(e){alert(e.message)}
+}
+async function joinGroup(){
+  const id=joinCode.value.trim().toUpperCase();
+  if(!id){alert('Escribí el código del grupo.');return}
+  try{
+    const data=await api('getGroup',{id});
+    openGroup(data.group);
+  }catch(e){alert(e.message)}
+}
+function openGroup(g){
+  if(!g || !g.id){alert('El servidor no devolvió un grupo válido.');return}
+  stopAutoRefresh();
+  group=g;
+  activeActivityId=null;
+  normalizeGroupState();
+  localStorage.setItem('gca_last_group',group.id);
+  rememberGroup(group);
+  home.classList.add('hidden');
+  groupView.classList.remove('hidden');
+  document.body.classList.add('group-open');
+  if(window.variableScroll) variableScroll.scrollTop=0;
+  render();
+  startAutoRefresh();
+}
+function backHome(){
+  stopAutoRefresh();
+  group=null; activeActivityId=null; editingExpenseId=null;
+  groupName.value=''; participantsText.value=''; joinCode.value='';
+  createGroupCard.classList.add('hidden');
+  groupView.classList.add('hidden'); home.classList.remove('hidden');
+  document.body.classList.remove('group-open');
+  renderMyGroups(); window.scrollTo({top:0,behavior:'smooth'});
+}
+function getShareUrl(){
+  const publicBase='https://ompineyro-hash.github.io/gastos-con-amigos/';
+  const server=getServerUrl();
+  return publicBase+'#grupo='+encodeURIComponent(group.id)+'&servidor='+encodeURIComponent(server);
+}
+
+function toggleParticipantForm(forceOpen){
+  const form=document.getElementById('addParticipantForm');
+  const btn=document.getElementById('addParticipantToggle');
+  if(!form || !btn)return;
+  const open=typeof forceOpen==='boolean'?forceOpen:form.classList.contains('hiddenForm');
+  form.classList.toggle('hiddenForm',!open);
+  btn.textContent=open?'− Ocultar':'＋ Agregar participante';
+  if(open && window.newParticipant) setTimeout(()=>newParticipant.focus(),50);
+}
+
+function renderNextStep(){
+  const box=document.getElementById('nextStepBox');
+  if(!box || !group)return;
+  normalizeGroupState();
+  const pending=getPendingTransfers();
+  let icon='🧭', title='Siguiente paso:', text='', state='step-info';
+  if(group.participants.length<2){
+    text='Agregá al menos dos participantes.';
+  }else if(!group.expenses.length){
+    text='Cargá el primer gasto.';
+  }else if(group.status==='open'){
+    text='Cargá los gastos que falten o revisá el resultado.';
+  }else if(pending.length){
+    icon='💳'; text='Registrá los pagos pendientes.'; state='step-warn';
+  }else{
+    icon='✅'; title='Listo:'; text='La actividad está saldada. Podés crear o abrir otra actividad.'; state='step-done';
+  }
+  box.className='nextStepBox '+state;
+  box.innerHTML='<div class="nextStepIcon">'+icon+'</div><div class="nextStepText"><b>'+title+'</b>'+text+'</div>';
+}
+
+function render(){
+  if(!group)return;
+  normalizeGroupState();
+  const payerAnterior = payer ? payer.value : '';
+  title.textContent=group.name+" · "+(getActiveActivity()?getActiveActivity().name:"");
+  groupCode.textContent='Código: '+group.id;
+  groupMiniSummary.textContent='👥 '+group.participants.length+' participantes · 💰 '+group.expenses.length+' gastos · 🕒 '+formatLastActivity(group.updatedAt);
+  renderActivities();
+  if(window.simpleGroupCode) simpleGroupCode.textContent=group.id;
+  const canEdit=group.status==='open';
+  participantsList.innerHTML=group.participants.map(p=>'<span class="person">'+escapeHtml(p)+(canEdit?' <button title="Quitar participante" onclick="removeParticipant(\''+String(p).replace(/'/g,"\\'")+'\')">×</button>':'')+'</span>').join('');
+  renderNextStep();
+  payer.innerHTML='<option value="">-- Elegir quién pagó --</option>'+group.participants.map(p=>'<option>'+escapeHtml(p)+'</option>').join('');
+  if(payerAnterior && group.participants.includes(payerAnterior)) payer.value=payerAnterior;
+  if(window.shareLink) shareLink.textContent=getShareUrl();
+  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><div class="expenseTop"><b class="expensePayer">'+escapeHtml(e.payer)+'</b><b class="expenseAmount">'+money(e.amount)+'</b></div><div class="expenseConcept">'+escapeHtml(e.concept||'Sin concepto')+'</div><div class="expenseActions">'+(e.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+e.receiptId+'\')">📷 Ver</button>':'')+'<button class="financeBtn" onclick="sendExpenseToFinanzaSimple(\''+e.id+'\')">💰 Finanzas</button>'+(canEdit?'<button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button>':'<span class="small">🔒 Gasto cerrado</span>')+'</div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
+  renderResults();
+  renderCloseSection();
+}
+
+async function saveGroup(){
+  // Guardar primero los datos dentro de la actividad seleccionada.
+  syncActiveActivity();
+  const selectedId=activeActivityId;
+
+  // Compatibilidad con el servidor anterior: los campos generales deben
+  // representar siempre la primera actividad, no la actividad que el usuario
+  // está mirando. Así el servidor no vuelca un gasto nuevo sobre la primera.
+  const firstActivity=Array.isArray(group.activities)?group.activities[0]:null;
+  if(firstActivity){
+    group.participants=firstActivity.participants;
+    group.expenses=firstActivity.expenses;
+    group.status=firstActivity.status;
+    group.payments=firstActivity.payments;
+    if(firstActivity.settlementTransfers)group.settlementTransfers=firstActivity.settlementTransfers;
+    else delete group.settlementTransfers;
+  }
+
+  delete group.activeActivityId;
+  group.updatedAt=new Date().toISOString();
+  const data=await api('saveGroup',{group});
+  group=data.group || group;
+  activeActivityId=selectedId;
+  normalizeGroupState();
+  applyActiveActivity();
+  saveLocalActivity();
+  rememberGroup(group);
+}
+async function loadGroup(force=false){
+  if(!group||switchingActivity)return;
+  const escribiendo=(amount && amount.value)||(concept && concept.value)||(payer && payer.value)||editingExpenseId;
+  if(escribiendo && !force){ syncStatus.textContent='Pausa mientras cargás'; return; }
+  try{
+    const currentId=group.id;
+    const selectionVersionAtStart=activitySelectionVersion;
+    const previousUpdatedAt=group.updatedAt||'';
+    const data=await api('getGroup',{id:currentId});
+    if(!data.group || data.group.id!==currentId)return;
+
+    // Si el usuario cambió de actividad mientras llegaba la respuesta,
+    // conservar siempre la selección más reciente y no volverlo atrás.
+    const latestSelectedId=activeActivityId;
+    const changed=(data.group.updatedAt||'')!==previousUpdatedAt;
+    group=data.group;
+    activeActivityId=latestSelectedId||null;
+    normalizeGroupState();
+    applyActiveActivity();
+    saveLocalActivity();
+    rememberGroup(group);
+    if(changed || force || selectionVersionAtStart!==activitySelectionVersion) render();
+    syncStatus.textContent=(changed?'Actualizado':'Al día')+': '+new Date().toLocaleTimeString('es-AR');
+  }catch(e){ syncStatus.textContent='Sin conexión'; }
+}
+async function addParticipant(){
+  try{
+    if(group && group.status!=="open"){alert("La actividad está liquidada. Reabrila para modificarla.");return;}
+    const p=newParticipant.value.trim();
+    if(!p){alert('Escribí un nombre.');return}
+    if(group.participants.some(x=>x.toLowerCase()===p.toLowerCase())){alert('Ese participante ya está.');return}
+    group.participants.push(p); if(!group.members.includes(p))group.members.push(p); newParticipant.value='';
+    toggleParticipantForm(false);
+    await saveGroup(); render();
+  }catch(e){alert(e.message)}
+}
+async function removeParticipant(name){
+  if(!group)return;
+  if(group.status!=="open"){alert("La actividad está liquidada. Reabrila para modificarla.");return;}
+  if(group.participants.length<=2){ alert('El grupo debe conservar al menos 2 participantes.'); return; }
+  const hasExpenses=group.expenses.some(e=>String(e.payer).toLowerCase()===String(name).toLowerCase());
+  if(hasExpenses){ alert('No se puede quitar a '+name+' porque tiene gastos cargados. Primero editá o eliminá esos gastos.'); return; }
+  if(!confirm('¿Quitar a '+name+' del grupo?'))return;
+  try{
+    group.participants=group.participants.filter(p=>p!==name);
+    const usedElsewhere=(group.activities||[]).some(a=>a.id!==activeActivityId&&a.participants.includes(name));
+    if(!usedElsewhere)group.members=group.members.filter(p=>p!==name);
+    await saveGroup();
+    render();
+  }catch(e){ alert(e.message); }
+}
+async function addExpense(){
+  try{
+    if(group && group.status!=="open"){alert("La actividad está liquidada. Reabrila para cargar o editar gastos.");return;}
+    const payerName=payer.value;
+    const amt=Number(amount.value);
+    const conc=concept.value.trim();
+
+    if(!payerName){alert('Elegí quién pagó.');return}
+    if(!amt || amt<=0){alert('Cargá un importe válido.');return}
+
+    expenseStatus.innerHTML='<span style="color:#475569">Guardando...</span>';
+    const selectedReceipt=expenseReceiptFile.files&&expenseReceiptFile.files[0];
+    let newReceiptId=null;
+    if(selectedReceipt){expenseStatus.innerHTML='<span style="color:#475569">Subiendo comprobante...</span>';newReceiptId=await uploadReceipt(selectedReceipt,'expense');}
+
+    if(editingExpenseId){
+      const expense=group.expenses.find(e=>e.id===editingExpenseId);
+      if(!expense) throw new Error('No se encontró el gasto para editar.');
+      expense.payer=payerName;
+      expense.amount=amt;
+      expense.concept=conc;
+      if(newReceiptId){const oldReceipt=expense.receiptId;expense.receiptId=newReceiptId;if(oldReceipt)await deleteReceiptSafe(oldReceipt);}
+      else if(existingExpenseReceiptId==='__REMOVE__'){const oldReceipt=expense.receiptId;delete expense.receiptId;if(oldReceipt)await deleteReceiptSafe(oldReceipt);}
+      expense.updatedAt=new Date().toISOString();
+    }else{
+      const newExpense={
+        id:expenseId(),
+        payer:payerName,
+        amount:amt,
+        concept:conc,
+        receiptId:newReceiptId||null,
+        createdAt:new Date().toISOString()
+      };
+      const active=getActiveActivity();
+      if(!active)throw new Error('No se encontró la actividad seleccionada.');
+      active.expenses.push(newExpense);
+      group.expenses=active.expenses;
+    }
+
+    await saveGroup();
+    render();
+
+    const edited=!!editingExpenseId;
+    resetExpenseForm();
+    expenseStatus.innerHTML='<span style="color:#15803d">✅ '+(edited?'Gasto actualizado correctamente.':'Gasto guardado correctamente.')+'</span>';
+  }catch(e){
+    expenseStatus.innerHTML='';
+    alert(e.message);
+  }
+}
+
+function editExpense(id){
+  if(group && group.status!=="open"){alert("La actividad está liquidada. Reabrila para editar gastos.");return;}
+  const expense=group.expenses.find(e=>e.id===id);
+  if(!expense){alert('No se encontró el gasto.');return}
+  editingExpenseId=id;
+  payer.value=expense.payer;
+  amount.value=expense.amount;
+  concept.value=expense.concept||'';
+  existingExpenseReceiptId=expense.receiptId||null;expenseReceiptFile.value='';renderExpenseReceiptPreview();
+  expenseFormTitle.textContent='Editar gasto';
+  saveExpenseBtn.textContent='Guardar cambios';
+  cancelEditBtn.classList.remove('hidden');
+  expenseStatus.innerHTML='<span style="color:#475569">Editando gasto seleccionado.</span>';
+  expenseFormTitle.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function cancelEditExpense(){
+  resetExpenseForm();
+  expenseStatus.innerHTML='';
+}
+
+function resetExpenseForm(){
+  editingExpenseId=null;
+  payer.value='';
+  amount.value='';
+  concept.value='';
+  expenseReceiptFile.value='';existingExpenseReceiptId=null;renderExpenseReceiptPreview();
+  expenseFormTitle.textContent='Cargar gasto';
+  saveExpenseBtn.textContent='Guardar gasto';
+  cancelEditBtn.classList.add('hidden');
+}
+
+async function deleteExpense(id){
+  if(group && group.status!=="open"){alert("La actividad está liquidada. Reabrila para eliminar gastos.");return;}
+  const expense=group.expenses.find(e=>e.id===id);
+  if(!expense){alert('No se encontró el gasto.');return}
+  if(!confirm('¿Eliminar este gasto?\n\n'+expense.payer+' - '+money(expense.amount)+' - '+(expense.concept||'Sin concepto'))) return;
+
+  try{
+    group.expenses=group.expenses.filter(e=>e.id!==id);
+    await saveGroup();
+    if(expense.receiptId)await deleteReceiptSafe(expense.receiptId);
+    if(editingExpenseId===id) resetExpenseForm();
+    render();
+    expenseStatus.innerHTML='<span style="color:#15803d">✅ Gasto eliminado correctamente.</span>';
+  }catch(e){
+    alert(e.message);
+  }
+}
+function calculateBaseBalances(){
+  const total=(group.expenses||[]).reduce((a,e)=>a+Number(e.amount||0),0);
+  const per=group.participants.length?total/group.participants.length:0;
+  const paid={}; const balance={};
+  group.participants.forEach(p=>{paid[p]=0;balance[p]=0;});
+  (group.expenses||[]).forEach(e=>{if(paid[e.payer]!==undefined) paid[e.payer]+=Number(e.amount||0);});
+  group.participants.forEach(p=>{balance[p]=paid[p]-per;});
+  return {total,per,paid,balance};
+}
+
+function transfersFromBalance(balance){
+  const debtors=[],creditors=[];
+  Object.entries(balance).forEach(([p,v])=>{if(v<-0.01)debtors.push({p,amount:-v});if(v>0.01)creditors.push({p,amount:v});});
+  debtors.sort((a,b)=>b.amount-a.amount);creditors.sort((a,b)=>b.amount-a.amount);
+  const rows=[];let i=0,j=0,n=1;
+  while(i<debtors.length&&j<creditors.length){
+    const amount=Math.min(debtors[i].amount,creditors[j].amount);
+    if(amount>0.01) rows.push({id:'T'+n++,from:debtors[i].p,to:creditors[j].p,amount:Number(amount.toFixed(2))});
+    debtors[i].amount-=amount;creditors[j].amount-=amount;
+    if(debtors[i].amount<=0.01)i++;if(creditors[j].amount<=0.01)j++;
+  }
+  return rows;
+}
+
+function normalizeGroupState(){
+  if(!group)return;
+  ensureActivities();
+  if(!group.status)group.status='open';
+  if(!Array.isArray(group.payments))group.payments=[];
+  group.payments=group.payments.filter(p=>p&&p.from&&p.to&&Number(p.amount||0)>0);
+  if(group.status==='closed'&&!Array.isArray(group.settlementTransfers)){
+    group.settlementTransfers=transfersFromBalance(calculateBaseBalances().balance);
+  }
+}
+
+function getSettlementTransfers(){
+  normalizeGroupState();
+  if(group.status==='closed')return group.settlementTransfers||[];
+  return transfersFromBalance(calculateBaseBalances().balance);
+}
+
+function paidForTransfer(t){
+  return (group.payments||[]).filter(p=>(p.transferId&&p.transferId===t.id)||(!p.transferId&&p.from===t.from&&p.to===t.to)).reduce((a,p)=>a+Number(p.amount||0),0);
+}
+
+function getPendingTransfers(){
+  return getSettlementTransfers().map(t=>({...t,paid:paidForTransfer(t),pending:Number(Math.max(0,t.amount-paidForTransfer(t)).toFixed(2))})).filter(t=>t.pending>0.01);
+}
+
+function renderResults(){
+  if(!group||!group.expenses.length){summaryBox.innerHTML='<div class="small">Todavía no hay gastos para calcular.</div>';resultsBox.innerHTML='';return;}
+  const calc=calculateBaseBalances();
+  summaryBox.innerHTML='<div class="resultLine">Total gastado: '+money(calc.total)+' · Participantes: '+group.participants.length+' · Parte de cada uno: '+money(calc.per)+'</div>';
+  const pendingByPerson={};const receivedByPerson={};
+  group.participants.forEach(p=>{pendingByPerson[p]=0;receivedByPerson[p]=0;});
+  getPendingTransfers().forEach(t=>{pendingByPerson[t.from]+=t.pending;receivedByPerson[t.to]+=t.pending;});
+  const rows=group.participants.map(p=>{
+    const paidDebts=(group.payments||[]).filter(x=>x.from===p).reduce((a,x)=>a+Number(x.amount||0),0);
+    const collected=(group.payments||[]).filter(x=>x.to===p).reduce((a,x)=>a+Number(x.amount||0),0);
+    const pending=pendingByPerson[p]||0;const receivable=receivedByPerson[p]||0;
+    let state='<span class="balanceOk">Equilibrado</span>';
+    if(pending>0.01)state='<span class="balanceDebt">Debe '+money(pending)+'</span>';
+    else if(receivable>0.01)state='<span class="balanceCredit">Recibe '+money(receivable)+'</span>';
+    return '<tr><td><b>'+escapeHtml(p)+'</b></td><td>'+money(calc.paid[p])+'</td><td>'+money(calc.per)+'</td><td>'+money(paidDebts)+'</td><td>'+money(collected)+'</td><td>'+state+'</td></tr>';
+  }).join('');
+  resultsBox.innerHTML='<div class="small"><b>Gastos y pagos se controlan por separado.</b> Los pagos no cambian los gastos originales.</div><table class="balanceTable"><thead><tr><th>Persona</th><th>Aportó</th><th>Le correspondía</th><th>Pagó deudas</th><th>Cobró</th><th>Estado</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function renderCloseSection(){
+  if(!group||!window.closeStatusBox)return;normalizeGroupState();
+  const pending=getPendingTransfers();const allSettled=pending.length===0;
+  const label=group.status==='open'?'Actividad abierta':(allSettled?'Actividad liquidada y saldada':'Actividad liquidada con pagos pendientes');
+  const cls=group.status==='open'?'closedBanner':('closedBanner '+(allSettled?'settled':'pending'));
+  closeStatusBox.innerHTML='<div class="'+cls+'"><b>'+label+'</b></div>';
+  if(group.status==='open'){
+    const proposal=getSettlementTransfers();
+    paymentsBox.innerHTML=proposal.length?'<h4>Deudas calculadas</h4>'+proposal.map(t=>'<div class="paymentRow"><div><b>'+escapeHtml(t.from)+'</b> debe '+money(t.amount)+' a <b>'+escapeHtml(t.to)+'</b><br><span class="small">Liquidá la actividad para comenzar a registrar pagos.</span></div></div>').join(''):'<div class="resultLine resultDone">Todos están equilibrados.</div>';
+  }else if(!pending.length){
+    paymentsBox.innerHTML='<div class="resultLine resultDone">✅ Todos cubrieron su parte. El balance general está en cero.</div>';
+  }else{
+    paymentsBox.innerHTML='<h4>Pagos pendientes</h4>'+pending.map(t=>{const id=String(t.id).replace(/'/g,"\\'");return '<div class="paymentRow"><div><b>'+escapeHtml(t.from)+'</b> debe '+money(t.pending)+' a <b>'+escapeHtml(t.to)+'</b><br><span class="small">Deuda original: '+money(t.amount)+' · Pagado: '+money(t.paid)+'</span><div class="transferActions"><button class="secondary" onclick="registerFullPayment(\''+id+'\')">✅ Pago completo</button><button onclick="registerPartialPayment(\''+id+'\')">➗ Pago parcial</button><button class="receiptBtn" onclick="registerPaymentWithReceipt(\''+id+'\')">📷 Pago + comprobante</button></div></div></div>';}).join('');
+  }
+  renderPaymentHistory();
+  closeGroupBtn.classList.toggle('hidden',group.status!=='open');reopenGroupBtn.classList.toggle('hidden',group.status==='open');
+  const disabled=group.status!=='open';['newParticipant','addParticipantToggle','payer','amount','concept','expenseReceiptFile','saveExpenseBtn','cancelEditBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=disabled;});
+}
+
+function renderPaymentHistory(){
+  if(!window.paymentHistoryBox)return;const rows=(group.payments||[]).slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  if(!rows.length){paymentHistoryBox.innerHTML='';return;}
+  paymentHistoryBox.innerHTML='<h4>Historial de pagos</h4>'+rows.map(p=>'<div class="paymentHistoryItem"><b>'+escapeHtml(p.from)+'</b> pagó '+money(p.amount)+' a <b>'+escapeHtml(p.to)+'</b><div class="small">'+escapeHtml(formatLastActivity(p.createdAt))+'</div><div class="paymentHistoryActions">'+(p.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+p.receiptId+'\')">📷 Ver comprobante</button>':'')+'<button class="financeBtn" onclick="sendPaymentToFinanzaSimple(\''+p.id+'\')">💰 Finanzas</button><button class="danger" onclick="deletePayment(\''+p.id+'\')">🗑 Anular pago</button></div></div>').join('');
+}
+
+async function createPayment(transferId,amount,receiptFile){
+  normalizeGroupState();const transfer=(group.settlementTransfers||[]).find(t=>t.id===transferId);if(!transfer)throw new Error('No se encontró esa deuda.');
+  const pending=getPendingTransfers().find(t=>t.id===transferId);if(!pending)throw new Error('Esa deuda ya está saldada.');
+  amount=Number(amount);if(!amount||amount<=0)throw new Error('El importe del pago no es válido.');if(amount>pending.pending+0.01)throw new Error('El pago supera la deuda pendiente.');
+  let rid=null;if(receiptFile)rid=await uploadReceipt(receiptFile,'payment');
+  group.payments.push({id:paymentId(),transferId,from:transfer.from,to:transfer.to,amount:Number(amount.toFixed(2)),receiptId:rid||null,createdAt:new Date().toISOString()});
+  try{await saveGroup();render();}catch(e){if(rid)await deleteReceiptSafe(rid);throw e;}
+}
+
+async function registerFullPayment(transferId){
+  const t=getPendingTransfers().find(x=>x.id===transferId);if(!t)return;
+  if(!confirm(t.from+' pagó '+money(t.pending)+' a '+t.to+'?'))return;
+  try{await createPayment(transferId,t.pending,null);}catch(e){alert(e.message);}
+}
+async function registerPartialPayment(transferId){
+  const t=getPendingTransfers().find(x=>x.id===transferId);if(!t)return;
+  const raw=prompt('Importe pagado por '+t.from+' a '+t.to+':',String(t.pending).replace('.',','));if(raw===null)return;
+  const amount=Number(String(raw).replace(',','.'));if(!amount||amount<=0){alert('Ingresá un importe válido.');return;}
+  try{await createPayment(transferId,amount,null);}catch(e){alert(e.message);}
+}
+function registerPaymentWithReceipt(transferId){
+  const t=getPendingTransfers().find(x=>x.id===transferId);if(!t)return;
+  const raw=prompt('Importe pagado por '+t.from+' a '+t.to+':',String(t.pending).replace('.',','));if(raw===null)return;
+  const amount=Number(String(raw).replace(',','.'));if(!amount||amount<=0){alert('Ingresá un importe válido.');return;}
+  pendingPaymentReceipt={transferId,amount};paymentReceiptFile.value='';paymentReceiptFile.click();
+}
+async function onPaymentReceiptSelected(){const file=paymentReceiptFile.files&&paymentReceiptFile.files[0];const pending=pendingPaymentReceipt;pendingPaymentReceipt=null;if(!file||!pending)return;try{await createPayment(pending.transferId,pending.amount,file);}catch(e){alert(e.message);}finally{paymentReceiptFile.value='';}}
+async function deletePayment(id){const payment=(group.payments||[]).find(p=>p.id===id);if(!payment)return;if(!confirm('¿Anular este pago registrado?\n\n'+payment.from+' → '+payment.to+' · '+money(payment.amount)))return;try{group.payments=group.payments.filter(p=>p.id!==id);await saveGroup();if(payment.receiptId)await deleteReceiptSafe(payment.receiptId);render();}catch(e){alert(e.message);}}
+async function closeGroup(){
+  if(!group||group.status!=='open')return;if(!group.expenses.length){alert('No hay gastos para cerrar.');return;}
+  if(!confirm('¿Liquidar esta actividad y comenzar los pagos? Los gastos quedarán fijos.'))return;
+  try{group.status='closed';group.closedAt=new Date().toISOString();group.payments=[];group.settlementTransfers=transfersFromBalance(calculateBaseBalances().balance);await saveGroup();render();}catch(e){alert(e.message);}
+}
+async function reopenGroup(){
+  if(!group||group.status==='open')return;if((group.payments||[]).length){alert('Para reabrir los gastos, primero anulá los pagos registrados.');return;}
+  if(!confirm('¿Reabrir esta actividad para modificar gastos o participantes? Se recalcularán las deudas al volver a liquidarla.'))return;
+  try{group.status='open';delete group.settlementTransfers;group.reopenedAt=new Date().toISOString();await saveGroup();render();}catch(e){alert(e.message);}
+}
+
+
+function encodeFinancePayload(data){
+  const json=JSON.stringify(data);
+  const bytes=new TextEncoder().encode(json);
+  let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b));
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+
+function openFinanzaSimpleMovement(data){
+  const url='https://ompineyro-hash.github.io/finanzasimple/FinanzaSimple_V18_4_SEGURIDAD04_GCA_IMPORT_FIX.html#omp_mov='+encodeFinancePayload(data);
+  window.open(url,'_blank');
+}
+
+function sendExpenseToFinanzaSimple(id){
+  if(!group)return;
+  const e=(group.expenses||[]).find(x=>x.id===id);
+  if(!e){alert('No se encontró el gasto.');return;}
+  if(!confirm('¿Este gasto salió de tu dinero y querés registrarlo en FinanzaSimple?\n\n'+e.payer+' · '+money(e.amount)+' · '+(e.concept||'Sin concepto')))return;
+  openFinanzaSimpleMovement({
+    schema:'OMP_MOV_1', origen:'Gastos con Amigos', externalId:'GCA:'+group.id+':EXP:'+e.id,
+    fecha:String(e.createdAt||new Date().toISOString()).slice(0,10), tipo:'Gasto',
+    categoria:'Gastos con Amigos', detalle:(group.name||'Grupo')+' · '+(getActiveActivity()?getActiveActivity().name:'Actividad')+' · '+(e.concept||'Sin concepto')+' · Pagó '+e.payer,
+    monto:Number(e.amount||0), grupoId:group.id, grupoNombre:group.name||'', persona:e.payer||''
+  });
+}
+
+function sendPaymentToFinanzaSimple(id){
+  if(!group)return;
+  const p=(group.payments||[]).find(x=>x.id===id);
+  if(!p){alert('No se encontró el pago.');return;}
+  const rol=prompt('Para pasar este pago a FinanzaSimple:\n\n1 = Yo pagué (Gasto)\n2 = Yo cobré (Ingreso)\n\nEscribí 1 o 2:','1');
+  if(rol===null)return;
+  if(rol!=='1'&&rol!=='2'){alert('Escribí 1 o 2.');return;}
+  const tipo=rol==='1'?'Gasto':'Ingreso';
+  const persona=rol==='1'?p.from:p.to;
+  openFinanzaSimpleMovement({
+    schema:'OMP_MOV_1', origen:'Gastos con Amigos', externalId:'GCA:'+group.id+':PAY:'+p.id+':'+tipo,
+    fecha:String(p.createdAt||new Date().toISOString()).slice(0,10), tipo,
+    categoria:'Gastos con Amigos', detalle:(group.name||'Grupo')+' · '+(getActiveActivity()?getActiveActivity().name:'Actividad')+' · Pago de '+p.from+' a '+p.to,
+    monto:Number(p.amount||0), grupoId:group.id, grupoNombre:group.name||'', persona
+  });
+}
+
+function toggleAdvanced(){advancedShare.classList.toggle('hidden');}
+
+async function shareInvite(){
+  const text=inviteText();
+  try{
+    if(navigator.share){
+      await navigator.share({title:'Gastos con Amigos',text});
+    }else{
+      await navigator.clipboard.writeText(text);
+      alert('La invitación quedó copiada. Podés pegarla donde quieras.');
+    }
+  }catch(e){
+    if(e && e.name==='AbortError') return;
+    try{
+      await navigator.clipboard.writeText(text);
+      alert('La invitación quedó copiada. Podés pegarla donde quieras.');
+    }catch(_){
+      alert('No se pudo compartir la invitación.');
+    }
+  }
+}
+
+function copyCode(){
+  navigator.clipboard.writeText(group.id).then(()=>alert('Código copiado: '+group.id));
+}
+
+function inviteText(){
+  return '📌 Te invito al grupo "'+group.name+'".\n\nTocá este enlace para entrar directamente:\n'+getShareUrl();
+}
+function copyInvite(){ navigator.clipboard.writeText(inviteText()).then(()=>alert('Invitación copiada.')); }
+function openWhatsapp(){ window.open('https://wa.me/?text='+encodeURIComponent(inviteText()),'_blank'); }
+function startAutoRefresh(){
+  stopAutoRefresh();
+  if(!group)return;
+  autoTimer=setInterval(()=>{
+    if(!document.hidden && group) loadGroup(false);
+  },4000);
+}
+function stopAutoRefresh(){
+  if(autoTimer){
+    clearInterval(autoTimer);
+    autoTimer=null;
+  }
+}
+async function openInviteFromLink(){
+  const hash=location.hash.replace(/^#/,'');
+  if(!hash)return;
+
+  const params=new URLSearchParams(hash);
+  const invitedGroup=params.get('grupo');
+  const invitedServer=params.get('servidor');
+
+  if(invitedServer){
+    const clean=cleanUrl(invitedServer);
+    if(clean && clean.includes('/macros/s/') && clean.endsWith('/exec')){
+      localStorage.setItem('gca_server_url',clean);
+      updateConnectionBadge();
+    }
+  }
+
+  if(!invitedGroup)return;
+  joinCode.value=invitedGroup.toUpperCase();
+
+  if(!getServerUrl()){
+    alert('La invitación está incompleta. Pedile al administrador que vuelva a compartirla desde la aplicación actualizada.');
+    return;
+  }
+
+  try{
+    connectionBadge.textContent='Conectando...';
+    const data=await api('getGroup',{id:invitedGroup.toUpperCase()});
+    openGroup(data.group);
+    syncStatus.textContent='Grupo conectado';
+  }catch(e){
+    connectionBadge.textContent='Sin conexión';
+    alert('No se pudo abrir el grupo invitado: '+e.message);
+  }
+}
+
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden && group) loadGroup(false);
+});
+
+window.addEventListener('beforeunload',stopAutoRefresh);
+expenseReceiptFile.addEventListener('change',renderExpenseReceiptPreview);
+paymentReceiptFile.addEventListener('change',onPaymentReceiptSelected);
+
+window.addEventListener('load',async()=>{
+  enableReservedAccess();
+  renderExpenseReceiptPreview();
+  updateConnectionBadge();
+  renderMyGroups();
+  await syncMyGroupsFromServer();
+  await openInviteFromLink();
+});
+</script>
+</body>
+</html>
