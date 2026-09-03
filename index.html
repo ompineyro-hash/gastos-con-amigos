@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gastos con Amigos V10.5 – Actividades y Pagos</title>
+<title>Gastos con Amigos V11.2 – Conexión visible</title>
 <style>
 *{box-sizing:border-box}
 body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#eef2f5;color:#1f2937}
@@ -266,6 +266,14 @@ body.group-open .fixedWorkspace{display:block!important}
 /* V9.3: enlace simple con FinanzaSimple */
 .financeBtn{background:#7c3aed!important}
 .financeHint{font-size:12px;color:#5b21b6;margin-top:5px}
+.financeSent{display:inline-block;background:#dcfce7;color:#166534;border-radius:999px;padding:4px 7px;font-size:11px;font-weight:bold;margin:2px}
+.financeSentExpense{margin-top:5px}
+.financeOwnerBox{background:#f5f3ff;border-left:5px solid #7c3aed;border-radius:10px;padding:8px 10px;margin:7px 0}
+.financeOwnerRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.financeOwnerRow select{width:auto;min-width:180px;margin:0;padding:7px 8px}
+@media(max-width:760px){.financeOwnerRow{display:block}.financeOwnerRow select{width:100%;margin-top:5px}}
+
+
 
 /* V9.2 FINAL: resultado a todo el ancho */
 #resultsBox{
@@ -325,7 +333,7 @@ body.group-open .fixedWorkspace{display:block!important}
 <body>
 <header>
 <h1>💸 Gastos con Amigos</h1>
-<div class="small" style="color:white">Grupos permanentes, actividades y pagos · V10.5</div>
+<div class="small" style="color:white">Grupos permanentes, actividades y pagos · V11.2</div>
 </header>
 
 <div class="wrap">
@@ -341,7 +349,13 @@ body.group-open .fixedWorkspace{display:block!important}
   <b>Bienvenido.</b><br>Elegí un grupo guardado o abrí una invitación.
 </div>
 
-<!-- Configuración reservada: se abre manteniendo presionado el título de la app -->
+<div id="visibleSetupAccess" class="notice hidden">
+  <b>Esta instalación todavía no tiene conexión configurada.</b><br>
+  <span class="small">Configurala una sola vez para poder crear grupos desde este dispositivo.</span><br>
+  <button type="button" onclick="openVisibleSetup()">⚙ Configurar conexión</button>
+</div>
+
+<!-- Configuración reservada: también puede abrirse manteniendo presionado el título de la app -->
 <div id="technicalSetup" class="hidden">
   <div class="notice"><b>Configuración reservada.</b></div>
   <label>URL del servidor</label>
@@ -411,6 +425,13 @@ body.group-open .fixedWorkspace{display:block!important}
 <div class="groupMeta"><span class="badge">Grupo compartido</span> <span id="groupCode" class="badge"></span></div>
 <div id="groupMiniSummary" class="small groupMiniSummary"></div>
 <div id="nextStepBox" class="nextStepBox"></div>
+<div class="financeOwnerBox">
+  <div class="financeOwnerRow">
+    <b>💰 Mis movimientos en FinanzaSimple:</b>
+    <select id="financeOwnerSelect" onchange="setFinanceOwner(this.value)"></select>
+  </div>
+  <div class="small">Elegí quién sos en este dispositivo. Solo se enviarán a FinanzaSimple los movimientos de esa persona.</div>
+</div>
 
 <div class="participantsCompact">
   <div class="participantsHead">
@@ -607,7 +628,8 @@ async function deleteCurrentActivity(){
   try{await saveGroup();render();}catch(e){alert(e.message);}
 }
 async function toggleActivityParticipant(name,checked){
-  const a=getActiveActivity();if(!a||a.status!=='open'){alert('La actividad está liquidada. Reabrila para cambiar participantes.');renderActivities();return;}
+  const a=getActiveActivity();if(!a||a.status!=='open'){alert('La actividad está liquidada. Reabrila para cambiar participantes.');renderActivities();
+  renderFinanceOwner();return;}
   if(!checked && a.expenses.some(e=>e.payer===name)){alert('No se puede quitar porque tiene gastos cargados en esta actividad.');renderActivities();return;}
   if(checked&&!a.participants.includes(name))a.participants.push(name);
   if(!checked)a.participants=a.participants.filter(x=>x!==name);
@@ -616,6 +638,13 @@ async function toggleActivityParticipant(name,checked){
 }
 
 function getServerUrl(){ return localStorage.getItem('gca_server_url') || ''; }
+
+function openVisibleSetup(){
+  if(!window.technicalSetup)return;
+  technicalSetup.classList.remove('hidden');
+  if(window.serverUrl)serverUrl.value=getServerUrl();
+  setTimeout(()=>technicalSetup.scrollIntoView({behavior:'smooth',block:'center'}),50);
+}
 
 let adminPressTimer=null;
 function openReservedSetup(){
@@ -664,6 +693,8 @@ function updateConnectionBadge(){
   connectionBadge.textContent=ok?'Conectado':'Esperando invitación';
   serverStatus.innerHTML=ok?'Conexión guardada.':'';
   serverUrl.value=getServerUrl();
+  if(window.visibleSetupAccess)visibleSetupAccess.classList.toggle('hidden',ok);
+  if(ok && window.technicalSetup)technicalSetup.classList.add('hidden');
   if(window.welcomeMessage){
     welcomeMessage.innerHTML=ok
       ? '<b>Aplicación lista.</b><br>Elegí un grupo guardado, creá uno nuevo o abrí una invitación.'
@@ -681,6 +712,23 @@ function uid(){ return Math.random().toString(36).slice(2,6).toUpperCase()+"-"+M
 function expenseId(){ return "G-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,7); }
 function money(n){ return '$ '+Number(n||0).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2}); }
 function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function financeOwnerKey(){ return group&&group.id?'gca_finance_owner_'+group.id:'gca_finance_owner'; }
+function getFinanceOwner(){ return localStorage.getItem(financeOwnerKey()) || ''; }
+function setFinanceOwner(name){
+  if(!name){ localStorage.removeItem(financeOwnerKey()); }
+  else localStorage.setItem(financeOwnerKey(),name);
+  render();
+}
+function renderFinanceOwner(){
+  const sel=document.getElementById('financeOwnerSelect');
+  if(!sel||!group)return;
+  const names=Array.isArray(group.members)&&group.members.length?group.members:(group.participants||[]);
+  const current=getFinanceOwner();
+  sel.innerHTML='<option value="">-- Elegir persona --</option>'+names.map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');
+  if(current&&names.includes(current))sel.value=current;
+}
+
 
 function receiptId(){ return "R-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8); }
 function paymentId(){ return "P-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8); }
@@ -839,13 +887,21 @@ async function openSavedGroup(id){
   catch(e){ alert('No se pudo abrir el grupo: '+e.message); }
 }
 function showCreateGroup(){
+  if(!getServerUrl()){
+    openVisibleSetup();
+    return;
+  }
   groupName.value=''; participantsText.value=''; createGroupCard.classList.remove('hidden'); groupName.focus(); createGroupCard.scrollIntoView({behavior:'smooth',block:'start'});
 }
 function cancelCreateGroup(){ groupName.value=''; participantsText.value=''; createGroupCard.classList.add('hidden'); }
 
 async function createSharedGroup(){
   try{
-    if(!getServerUrl()){ alert('Esta instalación todavía no está preparada para crear grupos.'); return; }
+    if(!getServerUrl()){
+      openVisibleSetup();
+      alert('Primero configurá la conexión del servidor. Después vas a poder crear el grupo.');
+      return;
+    }
     const name=groupName.value.trim();
     const participants=participantsText.value.split(',').map(x=>x.trim()).filter(Boolean);
     if(!name){alert('Escribí el nombre del grupo.');return}
@@ -933,6 +989,7 @@ function render(){
   groupCode.textContent='Código: '+group.id;
   groupMiniSummary.textContent='👥 '+group.participants.length+' participantes · 💰 '+group.expenses.length+' gastos · 🕒 '+formatLastActivity(group.updatedAt);
   renderActivities();
+  renderFinanceOwner();
   if(window.simpleGroupCode) simpleGroupCode.textContent=group.id;
   const canEdit=group.status==='open';
   participantsList.innerHTML=group.participants.map(p=>'<span class="person">'+escapeHtml(p)+(canEdit?' <button title="Quitar participante" onclick="removeParticipant(\''+String(p).replace(/'/g,"\\'")+'\')">×</button>':'')+'</span>').join('');
@@ -940,7 +997,7 @@ function render(){
   payer.innerHTML='<option value="">-- Elegir quién pagó --</option>'+group.participants.map(p=>'<option>'+escapeHtml(p)+'</option>').join('');
   if(payerAnterior && group.participants.includes(payerAnterior)) payer.value=payerAnterior;
   if(window.shareLink) shareLink.textContent=getShareUrl();
-  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><div class="expenseTop"><b class="expensePayer">'+escapeHtml(e.payer)+'</b><b class="expenseAmount">'+money(e.amount)+'</b></div><div class="expenseConcept">'+escapeHtml(e.concept||'Sin concepto')+'</div><div class="expenseActions">'+(e.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+e.receiptId+'\')">📷 Ver</button>':'')+'<button class="financeBtn" onclick="sendExpenseToFinanzaSimple(\''+e.id+'\')">💰 Finanzas</button>'+(canEdit?'<button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button>':'<span class="small">🔒 Gasto cerrado</span>')+'</div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
+  expensesList.innerHTML=group.expenses.map(e=>'<div class="expense"><div class="expenseTop"><b class="expensePayer">'+escapeHtml(e.payer)+'</b><b class="expenseAmount">'+money(e.amount)+'</b></div><div class="expenseConcept">'+escapeHtml(e.concept||'Sin concepto')+'</div>'+(e.financeSentAt?'<div class="financeSentExpense"><span class="financeSent">✅ Enviado a FinanzaSimple</span></div>':'')+'<div class="expenseActions">'+(e.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+e.receiptId+'\')">📷 Ver</button>':'')+'<button class="financeBtn" onclick="sendExpenseToFinanzaSimple(\''+e.id+'\')">💰 '+(e.financeSentAt?'Reenviar':'Finanzas')+'</button>'+(canEdit?'<button class="secondary" onclick="editExpense(\''+e.id+'\')">✏️ Editar</button><button class="gray" onclick="deleteExpense(\''+e.id+'\')">🗑 Eliminar</button>':'<span class="small">🔒 Gasto cerrado</span>')+'</div></div>').join('') || '<div class="small">Todavía no hay gastos cargados.</div>';
   renderResults();
   renderCloseSection();
 }
@@ -1214,7 +1271,7 @@ function renderCloseSection(){
 function renderPaymentHistory(){
   if(!window.paymentHistoryBox)return;const rows=(group.payments||[]).slice().sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
   if(!rows.length){paymentHistoryBox.innerHTML='';return;}
-  paymentHistoryBox.innerHTML='<h4>Historial de pagos</h4>'+rows.map(p=>'<div class="paymentHistoryItem"><b>'+escapeHtml(p.from)+'</b> pagó '+money(p.amount)+' a <b>'+escapeHtml(p.to)+'</b><div class="small">'+escapeHtml(formatLastActivity(p.createdAt))+'</div><div class="paymentHistoryActions">'+(p.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+p.receiptId+'\')">📷 Ver comprobante</button>':'')+'<button class="financeBtn" onclick="sendPaymentToFinanzaSimple(\''+p.id+'\')">💰 Finanzas</button><button class="danger" onclick="deletePayment(\''+p.id+'\')">🗑 Anular pago</button></div></div>').join('');
+  paymentHistoryBox.innerHTML='<h4>Historial de pagos</h4>'+rows.map(p=>'<div class="paymentHistoryItem"><b>'+escapeHtml(p.from)+'</b> pagó '+money(p.amount)+' a <b>'+escapeHtml(p.to)+'</b><div class="small">'+escapeHtml(formatLastActivity(p.createdAt))+'</div><div>'+(p.financeSentGastoAt?'<span class="financeSent">✅ Gasto enviado</span>':'')+(p.financeSentIngresoAt?'<span class="financeSent">✅ Ingreso enviado</span>':'')+'</div><div class="paymentHistoryActions">'+(p.receiptId?'<button class="receiptBtn" onclick="viewReceipt(\''+p.receiptId+'\')">📷 Ver comprobante</button>':'')+'<button class="financeBtn" onclick="sendPaymentToFinanzaSimple(\''+p.id+'\')">💰 Finanzas</button><button class="danger" onclick="deletePayment(\''+p.id+'\')">🗑 Anular pago</button></div></div>').join('');
 }
 
 async function createPayment(transferId,amount,receiptFile){
@@ -1265,38 +1322,101 @@ function encodeFinancePayload(data){
 }
 
 function openFinanzaSimpleMovement(data){
-  const url='https://ompineyro-hash.github.io/finanzasimple/#omp_mov='+encodeFinancePayload(data);
+  const url='https://ompineyro-hash.github.io/finanzasimple/FinanzaSimple_V18_4_HERMANADO_GCA_PROTEGIDO_PRUEBA_CORREGIDO.html#omp_mov='+encodeFinancePayload(data);
   window.open(url,'_blank');
 }
 
-function sendExpenseToFinanzaSimple(id){
+async function sendExpenseToFinanzaSimple(id){
   if(!group)return;
   const e=(group.expenses||[]).find(x=>x.id===id);
   if(!e){alert('No se encontró el gasto.');return;}
-  if(!confirm('¿Este gasto salió de tu dinero y querés registrarlo en FinanzaSimple?\n\n'+e.payer+' · '+money(e.amount)+' · '+(e.concept||'Sin concepto')))return;
+
+  const yo=getFinanceOwner();
+  if(!yo){alert('Primero elegí quién sos en “Mis movimientos en FinanzaSimple”.');return;}
+  if(String(e.payer)!==String(yo)){
+    alert('Este gasto lo pagó '+e.payer+'.\n\nTu FinanzaSimple está configurado para '+yo+', por eso no se enviará.');
+    return;
+  }
+
+  if(e.financeSentAt){
+    const when=formatLastActivity(e.financeSentAt);
+    if(!confirm('Este gasto ya fue enviado a FinanzaSimple ('+when+').\n\n¿Querés volver a enviarlo?'))return;
+  }else{
+    if(!confirm('Se enviará a FinanzaSimple de '+yo+':\n\nGasto · '+money(e.amount)+' · '+(e.concept||'Sin concepto')))return;
+  }
+
   openFinanzaSimpleMovement({
-    schema:'OMP_MOV_1', origen:'Gastos con Amigos', externalId:'GCA:'+group.id+':EXP:'+e.id,
-    fecha:String(e.createdAt||new Date().toISOString()).slice(0,10), tipo:'Gasto',
-    categoria:'Gastos con Amigos', detalle:(group.name||'Grupo')+' · '+(getActiveActivity()?getActiveActivity().name:'Actividad')+' · '+(e.concept||'Sin concepto')+' · Pagó '+e.payer,
-    monto:Number(e.amount||0), grupoId:group.id, grupoNombre:group.name||'', persona:e.payer||''
+    schema:'OMP_MOV_1',
+    origen:'Gastos con Amigos',
+    externalId:'GCA:'+group.id+':EXP:'+e.id,
+    fecha:String(e.createdAt||new Date().toISOString()).slice(0,10),
+    tipo:'Gasto',
+    categoria:'Gastos con Amigos',
+    detalle:'Gasto compartido · '+(group.name||'Grupo')+' · '+(getActiveActivity()?getActiveActivity().name:'Actividad')+' · '+(e.concept||'Sin concepto')+' · Pagó '+e.payer,
+    monto:Number(e.amount||0),
+    grupoId:group.id,
+    grupoNombre:group.name||'',
+    persona:e.payer||''
   });
+
+  e.financeSentAt=new Date().toISOString();
+  e.financeExternalId='GCA:'+group.id+':EXP:'+e.id;
+  try{ await saveGroup(); render(); }
+  catch(err){ console.warn('Se abrió FinanzaSimple, pero no pude guardar la marca de envío:',err); }
 }
 
-function sendPaymentToFinanzaSimple(id){
+async function sendPaymentToFinanzaSimple(id){
   if(!group)return;
   const p=(group.payments||[]).find(x=>x.id===id);
   if(!p){alert('No se encontró el pago.');return;}
-  const rol=prompt('Para pasar este pago a FinanzaSimple:\n\n1 = Yo pagué (Gasto)\n2 = Yo cobré (Ingreso)\n\nEscribí 1 o 2:','1');
-  if(rol===null)return;
-  if(rol!=='1'&&rol!=='2'){alert('Escribí 1 o 2.');return;}
-  const tipo=rol==='1'?'Gasto':'Ingreso';
-  const persona=rol==='1'?p.from:p.to;
+
+  const yo=getFinanceOwner();
+  if(!yo){alert('Primero elegí quién sos en “Mis movimientos en FinanzaSimple”.');return;}
+
+  let tipo='', persona='', detalle='', yaEnviado=null, marca='';
+  if(String(yo)===String(p.from)){
+    tipo='Gasto';
+    persona=p.from;
+    yaEnviado=p.financeSentGastoAt;
+    marca='gasto';
+    detalle='Pago de deuda compartida · '+(group.name||'Grupo')+' · '+(getActiveActivity()?getActiveActivity().name:'Actividad')+' · '+p.from+' → '+p.to;
+  }else if(String(yo)===String(p.to)){
+    tipo='Ingreso';
+    persona=p.to;
+    yaEnviado=p.financeSentIngresoAt;
+    marca='ingreso';
+    detalle='Reintegro gasto compartido · '+(group.name||'Grupo')+' · '+(getActiveActivity()?getActiveActivity().name:'Actividad')+' · '+p.from+' → '+p.to;
+  }else{
+    alert('Este pago es entre '+p.from+' y '+p.to+'.\n\nTu FinanzaSimple está configurado para '+yo+', por eso no corresponde enviarlo.');
+    return;
+  }
+
+  if(yaEnviado){
+    if(!confirm('Este '+tipo.toLowerCase()+' ya fue enviado a FinanzaSimple ('+formatLastActivity(yaEnviado)+').\n\n¿Querés volver a enviarlo?'))return;
+  }else{
+    const accion=tipo==='Ingreso'?'cobraste':'pagaste';
+    if(!confirm('Se enviará a FinanzaSimple de '+yo+':\n\n'+tipo+' · '+money(p.amount)+'\nPorque '+accion+' este movimiento.'))return;
+  }
+
   openFinanzaSimpleMovement({
-    schema:'OMP_MOV_1', origen:'Gastos con Amigos', externalId:'GCA:'+group.id+':PAY:'+p.id+':'+tipo,
-    fecha:String(p.createdAt||new Date().toISOString()).slice(0,10), tipo,
-    categoria:'Gastos con Amigos', detalle:(group.name||'Grupo')+' · '+(getActiveActivity()?getActiveActivity().name:'Actividad')+' · Pago de '+p.from+' a '+p.to,
-    monto:Number(p.amount||0), grupoId:group.id, grupoNombre:group.name||'', persona
+    schema:'OMP_MOV_1',
+    origen:'Gastos con Amigos',
+    externalId:'GCA:'+group.id+':PAY:'+p.id+':'+tipo,
+    fecha:String(p.createdAt||new Date().toISOString()).slice(0,10),
+    tipo,
+    categoria:'Gastos con Amigos',
+    detalle,
+    monto:Number(p.amount||0),
+    grupoId:group.id,
+    grupoNombre:group.name||'',
+    persona
   });
+
+  if(marca==='gasto') p.financeSentGastoAt=new Date().toISOString();
+  else p.financeSentIngresoAt=new Date().toISOString();
+
+  try{ await saveGroup(); render(); }
+  catch(err){ console.warn('Se abrió FinanzaSimple, pero no pude guardar la marca de envío:',err); }
 }
 
 function toggleAdvanced(){advancedShare.classList.toggle('hidden');}
